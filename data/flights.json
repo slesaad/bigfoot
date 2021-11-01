@@ -1,0 +1,754 @@
+[
+    {
+        "startLocation": {
+            "latitudeE7": 414529416,
+            "longitudeE7": -905068234,
+            "sourceInfo": {
+                "deviceTag": -1981400375
+            }
+        },
+        "endLocation": {
+            "latitudeE7": 329044526,
+            "longitudeE7": -970450142,
+            "sourceInfo": {
+                "deviceTag": -1981400375
+            }
+        },
+        "duration": {
+            "startTimestampMs": "1604754014537",
+            "endTimestampMs": "1604762905843"
+        },
+        "distance": 1113675,
+        "activityType": "FLYING",
+        "confidence": "HIGH",
+        "simplifiedRawPath": {
+            "points": [
+                {
+                    "latE7": 411481132,
+                    "lngE7": -906375896,
+                    "timestampMs": "1604755630000",
+                    "accuracyMeters": 28
+                },
+                {
+                    "latE7": 329021337,
+                    "lngE7": -970440650,
+                    "timestampMs": "1604762291871",
+                    "accuracyMeters": 180
+                },
+                {
+                    "latE7": 329055361,
+                    "lngE7": -970448645,
+                    "timestampMs": "1604762715119",
+                    "accuracyMeters": 15
+                },
+                {
+                    "latE7": 329053394,
+                    "lngE7": -970448738,
+                    "timestampMs": "1604762728556",
+                    "accuracyMeters": 150
+                },
+                {
+                    "latE7": 329056024,
+                    "lngE7": -970448864,
+                    "timestampMs": "1604762778731",
+                    "accuracyMeters": 12
+                },
+                {
+                    "latE7": 329052842,
+                    "lngE7": -970449887,
+                    "timestampMs": "1604762833689",
+                    "accuracyMeters": 16
+                }
+            ]
+        }
+    },
+    {
+        "startLocation": {
+            "latitudeE7": 329022289,
+            "longitudeE7": -970440375,
+            "sourceInfo": {
+                "deviceTag": -1981400375
+            }
+        },
+        "endLocation": {
+            "latitudeE7": 346381943,
+            "longitudeE7": -867799679,
+            "sourceInfo": {
+                "deviceTag": -1981400375
+            }
+        },
+        "duration": {
+            "startTimestampMs": "1604775731363",
+            "endTimestampMs": "1604781869000"
+        },
+        "distance": 969464,
+        "activityType": "FLYING",
+        "confidence": "HIGH",
+        "simplifiedRawPath": {
+            "points": [
+                {
+                    "latE7": 346353422,
+                    "lngE7": -867824770,
+                    "timestampMs": "1604781804000",
+                    "accuracyMeters": 13
+                },
+                {
+                    "latE7": 346347006,
+                    "lngE7": -867816060,
+                    "timestampMs": "1604781819000",
+                    "accuracyMeters": 4
+                },
+                {
+                    "latE7": 346348729,
+                    "lngE7": -867803134,
+                    "timestampMs": "1604781834000",
+                    "accuracyMeters": 8
+                }
+            ]
+        }
+    },
+    {
+        "startLocation": {
+            "latitudeE7": 336423356,
+            "longitudeE7": -844287491,
+            "sourceInfo": {
+                "deviceTag": -1981400375
+            }
+        },
+        "endLocation": {
+            "latitudeE7": 388563033,
+            "longitudeE7": -770422258,
+            "sourceInfo": {
+                "deviceTag": -1981400375
+            }
+        },
+        "duration": {
+            "startTimestampMs": "1633172219263",
+            "endTimestampMs": "1633179147769"
+        },
+        "distance": 880183,
+        "activityType": "FLYING",
+        "confidence": "HIGH",
+        "simplifiedRawPath": {
+            "points": [
+                {
+                    "latE7": 336431067,
+                    "lngE7": -844287949,
+                    "timestampMs": "1633172836205",
+                    "accuracyMeters": 61
+                },
+                {
+                    "latE7": 388515532,
+                    "lngE7": -770396403,
+                    "timestampMs": "1633178170000",
+                    "accuracyMeters": 47
+                },
+                {
+                    "latE7": 388528377,
+                    "lngE7": -770395494,
+                    "timestampMs": "1633178189000",
+                    "accuracyMeters": 22
+                },
+                {
+                    "latE7": 388542247,
+                    "lngE7": -770399023,
+                    "timestampMs": "1633178220000",
+                    "accuracyMeters": 24
+                }
+            ]
+        }
+    },
+    {
+        "startLocation": {
+            "latitudeE7": 388566785,
+            "longitudeE7": -770447527,
+            "sourceInfo": {
+                "deviceTag": -1981400375
+            }
+        },
+        "endLocation": {
+            "latitudeE7": 429341858,
+            "longitudeE7": -787327685,
+            "sourceInfo": {
+                "deviceTag": -1981400375
+            }
+        },
+        "duration": {
+            "startTimestampMs": "1633184783494",
+            "endTimestampMs": "1633189530000"
+        },
+        "distance": 475164,
+        "activityType": "FLYING",
+        "confidence": "HIGH",
+        "simplifiedRawPath": {
+            "points": [
+                {
+                    "latE7": 388571028,
+                    "lngE7": -770434284,
+                    "timestampMs": "1633185485000",
+                    "accuracyMeters": 51
+                }
+            ]
+        }
+    },
+    {
+        "startLocation": {
+            "latitudeE7": 389457370,
+            "longitudeE7": -774412291,
+            "sourceInfo": {
+                "deviceTag": -1981400375
+            }
+        },
+        "endLocation": {
+            "latitudeE7": 336436626,
+            "longitudeE7": -844421799,
+            "sourceInfo": {
+                "deviceTag": -1981400375
+            }
+        },
+        "duration": {
+            "startTimestampMs": "1633643259821",
+            "endTimestampMs": "1633649297960"
+        },
+        "distance": 860437,
+        "activityType": "FLYING",
+        "confidence": "HIGH",
+        "simplifiedRawPath": {
+            "points": [
+                {
+                    "latE7": 336437777,
+                    "lngE7": -844295125,
+                    "timestampMs": "1633648352592",
+                    "accuracyMeters": 180
+                },
+                {
+                    "latE7": 336434075,
+                    "lngE7": -844397281,
+                    "timestampMs": "1633648990658",
+                    "accuracyMeters": 119
+                }
+            ]
+        }
+    },
+    {
+        "startLocation": {
+            "latitudeE7": 336414724,
+            "longitudeE7": -844194446,
+            "sourceInfo": {
+                "deviceTag": -1981400375
+            }
+        },
+        "endLocation": {
+            "latitudeE7": 360807991,
+            "longitudeE7": -1151386673,
+            "sourceInfo": {
+                "deviceTag": -1981400375
+            }
+        },
+        "duration": {
+            "startTimestampMs": "1615037361606",
+            "endTimestampMs": "1615052039187"
+        },
+        "distance": 2804323,
+        "activityType": "FLYING",
+        "confidence": "HIGH",
+        "simplifiedRawPath": {
+            "points": [
+                {
+                    "latE7": 336439178,
+                    "lngE7": -844263993,
+                    "timestampMs": "1615037854962",
+                    "accuracyMeters": 67
+                },
+                {
+                    "latE7": 336432105,
+                    "lngE7": -844298583,
+                    "timestampMs": "1615037914942",
+                    "accuracyMeters": 72
+                },
+                {
+                    "latE7": 360811525,
+                    "lngE7": -1151475594,
+                    "timestampMs": "1615051950870",
+                    "accuracyMeters": 104
+                }
+            ]
+        }
+    },
+    {
+        "startLocation": {
+            "latitudeE7": 360808904,
+            "longitudeE7": -1151386640,
+            "sourceInfo": {
+                "deviceTag": -1981400375
+            }
+        },
+        "endLocation": {
+            "latitudeE7": 336434882,
+            "longitudeE7": -844261473,
+            "sourceInfo": {
+                "deviceTag": -1981400375
+            }
+        },
+        "duration": {
+            "startTimestampMs": "1615677163704",
+            "endTimestampMs": "1615690357118"
+        },
+        "distance": 2863708,
+        "activityType": "FLYING",
+        "confidence": "HIGH",
+        "simplifiedRawPath": {
+            "points": [
+                {
+                    "latE7": 360787283,
+                    "lngE7": -1151570884,
+                    "timestampMs": "1615677441118",
+                    "accuracyMeters": 32
+                },
+                {
+                    "latE7": 360789073,
+                    "lngE7": -1151620533,
+                    "timestampMs": "1615677487118",
+                    "accuracyMeters": 6
+                },
+                {
+                    "latE7": 360780541,
+                    "lngE7": -1151631660,
+                    "timestampMs": "1615677503118",
+                    "accuracyMeters": 10
+                },
+                {
+                    "latE7": 360742349,
+                    "lngE7": -1151653072,
+                    "timestampMs": "1615677549118",
+                    "accuracyMeters": 10
+                },
+                {
+                    "latE7": 367608410,
+                    "lngE7": -1119295623,
+                    "timestampMs": "1615679037118",
+                    "accuracyMeters": 40
+                },
+                {
+                    "latE7": 368556758,
+                    "lngE7": -1116482091,
+                    "timestampMs": "1615679145118",
+                    "accuracyMeters": 14
+                },
+                {
+                    "latE7": 380110133,
+                    "lngE7": -1079721526,
+                    "timestampMs": "1615680513118",
+                    "accuracyMeters": 28
+                },
+                {
+                    "latE7": 382517614,
+                    "lngE7": -1010704290,
+                    "timestampMs": "1615682964118",
+                    "accuracyMeters": 39
+                },
+                {
+                    "latE7": 382462501,
+                    "lngE7": -1010271753,
+                    "timestampMs": "1615682979118",
+                    "accuracyMeters": 8
+                },
+                {
+                    "latE7": 382224531,
+                    "lngE7": -1008466415,
+                    "timestampMs": "1615683041118",
+                    "accuracyMeters": 11
+                },
+                {
+                    "latE7": 382105559,
+                    "lngE7": -1007550699,
+                    "timestampMs": "1615683072118",
+                    "accuracyMeters": 12
+                },
+                {
+                    "latE7": 382045157,
+                    "lngE7": -1007105551,
+                    "timestampMs": "1615683087118",
+                    "accuracyMeters": 17
+                },
+                {
+                    "latE7": 376562285,
+                    "lngE7": -980045061,
+                    "timestampMs": "1615684013118",
+                    "accuracyMeters": 39
+                },
+                {
+                    "latE7": 376437010,
+                    "lngE7": -979603819,
+                    "timestampMs": "1615684028118",
+                    "accuracyMeters": 40
+                },
+                {
+                    "latE7": 376297902,
+                    "lngE7": -979136214,
+                    "timestampMs": "1615684044118",
+                    "accuracyMeters": 38
+                },
+                {
+                    "latE7": 376031874,
+                    "lngE7": -978224429,
+                    "timestampMs": "1615684075118",
+                    "accuracyMeters": 28
+                },
+                {
+                    "latE7": 351688813,
+                    "lngE7": -890718392,
+                    "timestampMs": "1615687077118",
+                    "accuracyMeters": 7
+                },
+                {
+                    "latE7": 344652467,
+                    "lngE7": -866334196,
+                    "timestampMs": "1615687912118",
+                    "accuracyMeters": 24
+                }
+            ]
+        }
+    },
+    {
+        "startLocation": {
+            "latitudeE7": 346403329,
+            "longitudeE7": -867756899,
+            "sourceInfo": {
+                "deviceTag": 1226127909
+            }
+        },
+        "endLocation": {
+            "latitudeE7": 328998091,
+            "longitudeE7": -970403352,
+            "sourceInfo": {
+                "deviceTag": 1226127909
+            }
+        },
+        "duration": {
+            "startTimestampMs": "1572041671207",
+            "endTimestampMs": "1572047120828"
+        },
+        "distance": 1005009,
+        "activityType": "FLYING",
+        "confidence": "HIGH",
+        "simplifiedRawPath": {
+            "points": [
+                {
+                    "latE7": 346468173,
+                    "lngE7": -867756722,
+                    "timestampMs": "1572041671207",
+                    "accuracyMeters": 16
+                },
+                {
+                    "latE7": 329084266,
+                    "lngE7": -970213255,
+                    "timestampMs": "1572045230000",
+                    "accuracyMeters": 54
+                },
+                {
+                    "latE7": 329088970,
+                    "lngE7": -970238291,
+                    "timestampMs": "1572045298000",
+                    "accuracyMeters": 35
+                },
+                {
+                    "latE7": 329100685,
+                    "lngE7": -970246488,
+                    "timestampMs": "1572045431000",
+                    "accuracyMeters": 13
+                },
+                {
+                    "latE7": 329100295,
+                    "lngE7": -970341956,
+                    "timestampMs": "1572045700000",
+                    "accuracyMeters": 12
+                },
+                {
+                    "latE7": 329075418,
+                    "lngE7": -970434970,
+                    "timestampMs": "1572046391534",
+                    "accuracyMeters": 72
+                },
+                {
+                    "latE7": 329036903,
+                    "lngE7": -970447861,
+                    "timestampMs": "1572046654533",
+                    "accuracyMeters": 44
+                },
+                {
+                    "latE7": 329063682,
+                    "lngE7": -970447121,
+                    "timestampMs": "1572046872000",
+                    "accuracyMeters": 20
+                }
+            ]
+        }
+    },
+    {
+        "startLocation": {
+            "latitudeE7": 419733879,
+            "longitudeE7": -879035188,
+            "sourceInfo": {
+                "deviceTag": 1226127909
+            }
+        },
+        "endLocation": {
+            "latitudeE7": 347434235,
+            "longitudeE7": -866449051,
+            "sourceInfo": {
+                "deviceTag": 1226127909
+            }
+        },
+        "duration": {
+            "startTimestampMs": "1572530843304",
+            "endTimestampMs": "1572542462790"
+        },
+        "distance": 811663,
+        "activityType": "FLYING",
+        "confidence": "HIGH",
+        "simplifiedRawPath": {
+            "points": [
+                {
+                    "latE7": 419740447,
+                    "lngE7": -879057834,
+                    "timestampMs": "1572531462866",
+                    "accuracyMeters": 72
+                }
+            ]
+        }
+    },
+    {
+        "startLocation": {
+            "latitudeE7": 398560963,
+            "longitudeE7": -1046737376,
+            "sourceInfo": {
+                "deviceTag": 1226127909
+            }
+        },
+        "endLocation": {
+            "latitudeE7": 376213129,
+            "longitudeE7": -1223789554,
+            "sourceInfo": {
+                "deviceTag": 1226127909
+            }
+        },
+        "duration": {
+            "startTimestampMs": "1565137944214",
+            "endTimestampMs": "1565151711292"
+        },
+        "distance": 1553075,
+        "activityType": "FLYING",
+        "confidence": "HIGH",
+        "simplifiedRawPath": {
+            "points": [
+                {
+                    "latE7": 376119734,
+                    "lngE7": -1223899659,
+                    "timestampMs": "1565150515789",
+                    "accuracyMeters": 17
+                },
+                {
+                    "latE7": 376123602,
+                    "lngE7": -1223895589,
+                    "timestampMs": "1565150704841",
+                    "accuracyMeters": 100
+                },
+                {
+                    "latE7": 376111251,
+                    "lngE7": -1223904773,
+                    "timestampMs": "1565150737979",
+                    "accuracyMeters": 58
+                },
+                {
+                    "latE7": 376155800,
+                    "lngE7": -1223899789,
+                    "timestampMs": "1565151635000",
+                    "accuracyMeters": 5
+                }
+            ]
+        }
+    },
+    {
+        "startLocation": {
+            "latitudeE7": 339415889,
+            "longitudeE7": -1184085300,
+            "sourceInfo": {
+                "deviceTag": 1226127909
+            }
+        },
+        "endLocation": {
+            "latitudeE7": 389531162,
+            "longitudeE7": -774565388,
+            "sourceInfo": {
+                "deviceTag": 1226127909
+            }
+        },
+        "duration": {
+            "startTimestampMs": "1565677036769",
+            "endTimestampMs": "1565696007891"
+        },
+        "distance": 3673985,
+        "activityType": "FLYING",
+        "confidence": "HIGH",
+        "simplifiedRawPath": {
+            "points": [
+                {
+                    "latE7": 339369479,
+                    "lngE7": -1184007924,
+                    "timestampMs": "1565677713500",
+                    "accuracyMeters": 500
+                },
+                {
+                    "latE7": 389535404,
+                    "lngE7": -774470701,
+                    "timestampMs": "1565695330601",
+                    "accuracyMeters": 200
+                },
+                {
+                    "latE7": 389476730,
+                    "lngE7": -774492217,
+                    "timestampMs": "1565695587220",
+                    "accuracyMeters": 500
+                }
+            ]
+        }
+    },
+    {
+        "startLocation": {
+            "latitudeE7": 389531162,
+            "longitudeE7": -774565388,
+            "sourceInfo": {
+                "deviceTag": 1226127909
+            }
+        },
+        "endLocation": {
+            "latitudeE7": 346403329,
+            "longitudeE7": -867756899,
+            "sourceInfo": {
+                "deviceTag": 1226127909
+            }
+        },
+        "duration": {
+            "startTimestampMs": "1565699379387",
+            "endTimestampMs": "1565706377696"
+        },
+        "distance": 957936,
+        "activityType": "FLYING",
+        "confidence": "HIGH"
+    },
+    {
+        "startLocation": {
+            "latitudeE7": 336436793,
+            "longitudeE7": -844262606
+        },
+        "endLocation": {
+            "latitudeE7": 423706776,
+            "longitudeE7": -710198484
+        },
+        "duration": {
+            "startTimestampMs": "1576444792687",
+            "endTimestampMs": "1576457797085"
+        },
+        "distance": 1521104,
+        "activityType": "FLYING",
+        "confidence": "HIGH",
+        "simplifiedRawPath": {
+            "points": [
+                {
+                    "latE7": 336430814,
+                    "lngE7": -844279343,
+                    "timestampMs": "1576444813510",
+                    "accuracyMeters": 300
+                },
+                {
+                    "latE7": 336384095,
+                    "lngE7": -844288161,
+                    "timestampMs": "1576445034885",
+                    "accuracyMeters": 104
+                },
+                {
+                    "latE7": 423658401,
+                    "lngE7": -710140585,
+                    "timestampMs": "1576453733422",
+                    "accuracyMeters": 182
+                },
+                {
+                    "latE7": 423671366,
+                    "lngE7": -710172754,
+                    "timestampMs": "1576455907819",
+                    "accuracyMeters": 400
+                },
+                {
+                    "latE7": 423666869,
+                    "lngE7": -710157326,
+                    "timestampMs": "1576455926914",
+                    "accuracyMeters": 16
+                }
+            ]
+        }
+    },
+    {
+        "startLocation": {
+            "latitudeE7": 423707039,
+            "longitudeE7": -710198815
+        },
+        "endLocation": {
+            "latitudeE7": 412626307,
+            "longitudeE7": 287414753
+        },
+        "duration": {
+            "startTimestampMs": "1576464227151",
+            "endTimestampMs": "1576503791051"
+        },
+        "distance": 7727402,
+        "activityType": "FLYING",
+        "confidence": "HIGH"
+    },
+    {
+        "startLocation": {
+            "latitudeE7": 346403329,
+            "longitudeE7": -867756899,
+            "sourceInfo": {
+                "deviceTag": -1253967689
+            }
+        },
+        "endLocation": {
+            "latitudeE7": 284311577,
+            "longitudeE7": -813080830,
+            "sourceInfo": {
+                "deviceTag": -1253967689
+            }
+        },
+        "duration": {
+            "startTimestampMs": "1560129130612",
+            "endTimestampMs": "1560138065132"
+        },
+        "distance": 862932,
+        "activityType": "FLYING",
+        "confidence": "HIGH"
+    },
+    {
+        "startLocation": {
+            "latitudeE7": 352144026,
+            "longitudeE7": -809473146,
+            "sourceInfo": {
+                "deviceTag": -1253967689
+            }
+        },
+        "endLocation": {
+            "latitudeE7": 407769271,
+            "longitudeE7": -738739659,
+            "sourceInfo": {
+                "deviceTag": -1253967689
+            }
+        },
+        "duration": {
+            "startTimestampMs": "1546016358851",
+            "endTimestampMs": "1546024424346"
+        },
+        "distance": 875291,
+        "activityType": "FLYING",
+        "confidence": "HIGH"
+    }
+]
