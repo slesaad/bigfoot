@@ -85,7 +85,7 @@ const midpoint = (latlng1, latlng2) => {
 let map = L.map(mapId, mapConfig);
 
 // Add the dark mode tilelayer; you can replace it with other tilelayer if you like
-var Stadia_AlidadeSmoothDark = L.tileLayer('https://tiles.stadiamaps.com/tiles/alidade_smooth_dark/{z}/{x}/{y}{r}.png', {
+var Stadia_AlidadeSmoothDark = L.tileLayer('https://tiles.stadiamaps.com/tiles/alidade_smooth_dark/{z}/{x}/{y}{r}.png?api_key=8823da9b-399b-4ef0-b256-62d2029d7096', {
   maxZoom: 20,
   attribution: '© <a href="https://stadiamaps.com/">Stadia Maps</a>, © <a href="https://openmaptiles.org/">OpenMapTiles</a> © <a href="http://openstreetmap.org">OpenStreetMap</a> contributors'
 }).addTo(map);
