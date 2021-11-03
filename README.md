@@ -10,7 +10,8 @@ Bigfoot is a web app that traces the places you've been to, your road trips and 
 
 Follow the given steps to set up your own bigfoot visualization.
 
-**Step I: Download data**
+#### Step I: Download data
+
 Download the location history data from your Google Maps account. Check out this [HowTo](https://www.howtogeek.com/725241/how-to-download-your-google-maps-data/) article to learn how to do that.
 
 Copy the downloaded location history folder to the `data/` directory, so it looks like:
@@ -22,7 +23,8 @@ Copy the downloaded location history folder to the `data/` directory, so it look
         ...
 ```
 
-**Step II: Process Data**
+#### Step II: Process Data
+
 ``` bash
 > cd backend/
 > python -m venv env
@@ -32,10 +34,12 @@ Copy the downloaded location history folder to the `data/` directory, so it look
 > cd ..
 ```
 
-**Step III: Configure visualization**
+#### Step III: Configure visualization
+
 Open `index.js` and update the `mapConfig` and `vizConfig` variables to your liking. Also update `visitedStates` to reflect your location history.
 
-**Step IV: Serve**
+#### Step IV: Serve
+
 Serve the webpage from the root `bigfoot/` directory using python http server.
 ``` bash
 > python -m http.server 3000
