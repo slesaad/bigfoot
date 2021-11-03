@@ -14,7 +14,7 @@ Follow the given steps to set up your own bigfoot visualization.
 Download the location history data from your Google Maps account. Check out this [HowTo](https://www.howtogeek.com/725241/how-to-download-your-google-maps-data/) article to learn how to do that.
 
 Copy the downloaded location history folder to the `data/` directory, so it looks like:
-``` json
+``` plain
 |data
    |location_history
         |2021
@@ -37,7 +37,7 @@ Open `index.js` and update the `mapConfig` and `vizConfig` variables to your lik
 
 **Step IV: Serve**
 Serve the webpage from the root `bigfoot/` directory using python http server.
-``` python
+``` bash
 > python -m http.server 3000
 ```
 Open your browser and go to `localhost:3000`
