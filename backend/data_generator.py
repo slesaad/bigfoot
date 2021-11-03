@@ -92,5 +92,7 @@ def save(filepath, places, flights, road_trips):
 
 if __name__=="__main__":
     # save(generate('data/location_history.json'), 'data/visits.json')
-    places, flights, road_trips = generate_years([2020, 2021, 2019, 2018, 2016, 2015])
+    data_dir = os.path.abspath("../data/location_history")
+    years = [x.split("/")[-1] for x in glob.glob(f'{data_dir}/*') if os.path.isdir(x) ]
+    places, flights, road_trips = generate_years(years)
     save('data', places, flights, road_trips)
