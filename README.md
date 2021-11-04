@@ -36,7 +36,12 @@ Copy the downloaded location history folder to the `data/` directory, so it look
 
 #### Step III: Configure visualization
 
-Open `index.js` and update the `mapConfig` and `vizConfig` variables to your liking. Also update `visitedStates` to reflect your location history.
+Update `config.json` with necessary configuration changes.
+
+**<span style="color:#c0392b">IMPORTANT</span>**: Please update the API keys by creating your own accounts at [Mapbox](https://account.mapbox.com/access-tokens/) and [Stadia Maps](https://client.stadiamaps.com/dashboard/).
+
+Update `visitedStates.json` with the states you've visited.
+<span style="font-size:13px">***TODO***: Automatically get it from location history. (I didn't want to count states that I've had a layover at as "visited")</span>
 
 #### Step IV: Serve
 
