@@ -19,27 +19,27 @@ Copy the downloaded location history folder to the `data/` directory, so it look
 ``` plain
 |data
    |location_history
-        |2021
-        |2020
-        ...
+      |2021
+      |2020
+      ...
 ```
 
 ### Step II: Process Data
 
 ``` bash
-> cd backend/
-> python -m venv env
-> source env/bin/activate
-> pip install -r requirements.txt
-> python data_generator.py
-> cd ..
+cd backend/
+python -m venv env
+source env/bin/activate
+pip install -r requirements.txt
+python data_generator.py
+cd ..
 ```
 
 ### Step III: Configure visualization
 
 Update `config.json` with necessary configuration changes.
 
-**<span style="color:#c0392b">IMPORTANT</span>**: Please update the API keys by creating your own accounts at [Mapbox](https://account.mapbox.com/access-tokens/) and [Stadia Maps](https://client.stadiamaps.com/dashboard/).
+**<span style="color:#c0392b">IMPORTANT</span>**: Please update the API keys by creating your own accounts at [Mapbox](https://account.mapbox.com/access-tokens/) and [Stadia Maps](https://client.stadiamaps.com/dashboard/). The API keys in the file are domain-restricted and will not work for you.
 
 Update `visitedStates.json` with the states you've visited.
 <span style="font-size:13px">***TODO***: Automatically get it from location history. (I didn't want to count states that I've had a layover at as "visited")</span>
@@ -49,7 +49,7 @@ Update `visitedStates.json` with the states you've visited.
 Serve the webpage from the root `bigfoot/` directory using python http server.
 
 ``` bash
-> python -m http.server 3000
+python -m http.server 3000
 ```
 
 Open your browser and go to `localhost:3000`
