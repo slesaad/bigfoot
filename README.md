@@ -44,7 +44,9 @@ Update `config.json` with necessary configuration changes.
 Update `visitedStates.json` with the states you've visited.
 <span style="font-size:13px">***TODO***: Automatically get it from location history. (I didn't want to count states that I've had a layover at as "visited")</span>
 
-### Step IV: Serve
+### Step IV: Serve or DEPLOY!
+
+#### To view the visualization locally:
 
 Serve the webpage from the root `bigfoot/` directory using python http server.
 
@@ -53,6 +55,12 @@ python -m http.server 3000
 ```
 
 Open your browser and go to `localhost:3000`
+
+#### To deploy it to github pages:
+
+Fork the repo. Follow all the steps above to visualize your data. Push the updated data (`flights.json`, `places.json`, `road_trips.json`, `config.json` and `visitedStates.json`) to github. Be careful not to push your location history to a public github repository.
+
+Activate github pages for your repository by following steps from [this article](https://towardsdatascience.com/how-to-create-a-free-github-pages-website-53743d7524e1#:~:text=Now%20you%E2%80%99re%20going%20to%20take%20advantage%20of%20GitHub%20Pages.%20Go%20to%20your%20GitHub%20repository%20and%20click%20%E2%80%9CSettings.%E2%80%9D). You'll then have your bigfoot hosted at `username.github.io/bigfoot`.
 
 ## Disclaimer
 
