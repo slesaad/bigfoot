@@ -30,13 +30,13 @@ const midpoint = (latlng1, latlng2) => {
 fetch('./config.json')
   .then(response => response.json())
   .then(data => {
-    const { mapConfig, vizConfig } = data;
+    const { mapConfig, vizConfig, stadiaApiKey, mapboxApiKey } = data;
 
     // Define map
     let map = L.map(mapId, mapConfig);
 
     // Add the dark mode tilelayer; you can replace it with other tilelayer if you like
-    L.tileLayer('https://tiles.stadiamaps.com/tiles/alidade_smooth_dark/{z}/{x}/{y}{r}.png?api_key=8823da9b-399b-4ef0-b256-62d2029d7096', {
+    L.tileLayer(`https://tiles.stadiamaps.com/tiles/alidade_smooth_dark/{z}/{x}/{y}{r}.png?api_key=${stadiaApiKey}`, {
       maxZoom: 20,
       attribution: '© <a href="https://stadiamaps.com/">Stadia Maps</a>, © <a href="https://openmaptiles.org/">OpenMapTiles</a> © <a href="http://openstreetmap.org">OpenStreetMap</a> contributors'
     }).addTo(map);
@@ -80,7 +80,7 @@ fetch('./config.json')
       .then(data => {
         data.map(trip => {
           L.Routing.control({
-            router: L.Routing.mapbox('sk.eyJ1Ijoic2xlc2FhZCIsImEiOiJja3ZhNTlsamNhYjhlMzJuejd5YTdkMWR3In0.-As783arc7tlRLgHmads4A'),
+            router: L.Routing.mapbox(`${mapboxApiKey}`),
             waypoints: trip['waypointPath']['waypoints'].filter(d => d).map(loc => {
               const latLng = convertLatLng(loc['latE7'], loc['lngE7']);
               return L.latLng(latLng[0], latLng[1]);
