@@ -29,7 +29,7 @@ ROAD_TRIP_TYPES = [
     'IN_PASSENGER_VEHICLE'
 ]
 
-def generate_years(years):
+def generate_years(folder, years):
     nomi = pgeocode.Nominatim('us')
 
     places = []
@@ -41,14 +41,17 @@ def generate_years(years):
     road_trips = []
 
     for year in years:
-        directory = os.path.abspath(f'data/location_history/{year}')
+        directory = os.path.join(folder, year)
         files = glob.glob(f'{directory}/*')
         for f in files:
             month_data = json.load(open(f))
             for objects in month_data['timelineObjects']:
                 if place := objects.get('placeVisit'):
                     if address := place['location'].get('address'):
-                        zip_code = address[-9:-4]
+                        try:
+                            zip_code = address.split(",")[-2].split(" ")[-1]
+                        except:
+                            continue
                         lat_long = nomi.query_postal_code(zip_code)
                         lat = lat_long.latitude
                         lon = lat_long.longitude
@@ -67,17 +70,18 @@ def generate_years(years):
                             )
                 if activity := objects.get('activitySegment'):
                     # Flights
-                    if activity['activityType'] == 'FLYING' and activity['confidence'] == 'HIGH':
+                    if activity.get('activityType') == 'FLYING' and activity['confidence'] == 'HIGH':
                         activity.pop('activities')
                         flights.append(
                             activity
                         )
                     # Road Trips
-                    if activity.get('waypointPath') and activity['activityType'] in ROAD_TRIP_TYPES and activity['confidence'] == 'HIGH' and (dist := activity.get('distance')) and dist > 50000:
+                    if activity.get('waypointPath') and activity.get('activityType') in ROAD_TRIP_TYPES and activity['confidence'] == 'HIGH' and (dist := activity.get('distance')) and dist > 50000:
                         activity.pop('activities')
                         road_trips.append(
                             activity
                         )
+    # exit()
     return places, flights, road_trips
 
 def convert_latlng(lat, lng):
@@ -86,13 +90,14 @@ def convert_latlng(lat, lng):
     return lat, lng
 
 def save(filepath, places, flights, road_trips):
-    json.dump(places, open(f'{filepath}/places.json', 'w'))
-    json.dump(flights, open(f'{filepath}/flights.json', 'w'))
-    json.dump(road_trips, open(f'{filepath}/road_trips.json', 'w'))
+    json.dump(places, open(os.path.join(filepath, f'{filepath}/places.json'), 'w'))
+    json.dump(flights, open(os.path.join(filepath, f'{filepath}/flights.json'), 'w'))
+    json.dump(road_trips, open(os.path.join(filepath, f'{filepath}/road_trips.json'), 'w'))
 
 if __name__=="__main__":
     # save(generate('data/location_history.json'), 'data/visits.json')
-    data_dir = os.path.abspath("../data/location_history")
-    years = [x.split("/")[-1] for x in glob.glob(f'{data_dir}/*') if os.path.isdir(x) ]
-    places, flights, road_trips = generate_years(years)
-    save('data', places, flights, road_trips)
+    data_dir = os.path.abspath("../data")
+    location_history_dir = os.path.join(data_dir, "location_history/")
+    years = [x.split("/")[-1] for x in glob.glob(f'{location_history_dir}/*') if os.path.isdir(x) ]
+    places, flights, road_trips = generate_years(location_history_dir, years)
+    save(data_dir, places, flights, road_trips)
