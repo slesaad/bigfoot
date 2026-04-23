@@ -29,9 +29,14 @@ Promise.all([
 ]).then(([config, visited, allStates, roadTrips, flights, places]) => {
   const { mapConfig, vizConfig, stadiaApiKey } = config;
 
+  const STADIA_STYLES = { dark: 'alidade_smooth_dark', light: 'alidade_smooth' };
+  const styleUrl = (theme) =>
+    `https://tiles.stadiamaps.com/styles/${STADIA_STYLES[theme]}.json?api_key=${stadiaApiKey}`;
+  let theme = 'dark';
+
   const map = new maplibregl.Map({
     container: mapId,
-    style: `https://tiles.stadiamaps.com/styles/alidade_smooth_dark.json?api_key=${stadiaApiKey}`,
+    style: styleUrl(theme),
     center: [mapConfig.center[1], mapConfig.center[0]], // MapLibre is [lng, lat]
     zoom: 0, // world view on load; flyTo animates to configured zoom
     maxZoom: mapConfig.maxZoom,
@@ -121,6 +126,16 @@ Promise.all([
   const shortPlace = (p) =>
     p ? p.split(', ').slice(0, 2).join(', ') : '';
 
+  const tooltipStyle = () => theme === 'dark'
+    ? {
+        background: 'rgba(34, 34, 34, 0.95)',
+        color: 'rgba(220, 221, 225, 0.9)',
+      }
+    : {
+        background: 'rgba(255, 255, 255, 0.95)',
+        color: 'rgba(34, 34, 34, 0.9)',
+      };
+
   const getTooltip = ({ object, layer }) => {
     if (!object) return null;
     if (layer.id === 'road-trips' || layer.id === 'flights') {
@@ -139,8 +154,7 @@ Promise.all([
           <div>${range}</div>
         `,
         style: {
-          background: 'rgba(34, 34, 34, 0.95)',
-          color: 'rgba(220, 221, 225, 0.9)',
+          ...tooltipStyle(),
           font: '11px Lato',
           padding: '6px 8px',
           borderRadius: '2px',
@@ -187,4 +201,26 @@ Promise.all([
     if (overlay) overlay.setProps({ layers: buildLayers() });
   });
   document.body.appendChild(legend);
+
+  // Theme toggle — sun/moon icons in the header; active one is highlighted.
+  const sunSvg = `<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><line x1="12" y1="2" x2="12" y2="4"/><line x1="12" y1="20" x2="12" y2="22"/><line x1="4.93" y1="4.93" x2="6.34" y2="6.34"/><line x1="17.66" y1="17.66" x2="19.07" y2="19.07"/><line x1="2" y1="12" x2="4" y2="12"/><line x1="20" y1="12" x2="22" y2="12"/><line x1="4.93" y1="19.07" x2="6.34" y2="17.66"/><line x1="17.66" y1="6.34" x2="19.07" y2="4.93"/></svg>`;
+  const moonSvg = `<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>`;
+
+  // Icon shown = the theme you'd switch TO (sun when dark, moon when light).
+  const themeBtn = document.createElement('button');
+  themeBtn.className = 'theme-icons';
+  const renderThemeBtn = () => {
+    const target = theme === 'dark' ? 'light' : 'dark';
+    themeBtn.innerHTML = target === 'light' ? sunSvg : moonSvg;
+    themeBtn.title = `${target[0].toUpperCase() + target.slice(1)} mode`;
+    themeBtn.setAttribute('aria-label', themeBtn.title);
+  };
+  themeBtn.addEventListener('click', () => {
+    theme = theme === 'dark' ? 'light' : 'dark';
+    document.body.classList.toggle('light', theme === 'light');
+    renderThemeBtn();
+    map.setStyle(styleUrl(theme));
+  });
+  renderThemeBtn();
+  document.querySelector('.header').appendChild(themeBtn);
 }).catch(err => console.error(err));
