@@ -1,6 +1,6 @@
 {
     "mapConfig": {
-        "center": [34.82, -94.58],
+        "center": [20, -94],
         "zoom": 1.85,
         "maxZoom": 10,
         "minZoom": 0
