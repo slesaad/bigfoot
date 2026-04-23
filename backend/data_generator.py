@@ -443,6 +443,57 @@ def resolve_place_names(items, cache, mapbox_token, label):
     print(f"  {label} done: hits={hits} misses={misses} fails={fails}")
 
 
+def _point_in_ring(x, y, ring):
+    inside = False
+    n = len(ring)
+    for i in range(n):
+        xi, yi = ring[i][0], ring[i][1]
+        xj, yj = ring[i - 1][0], ring[i - 1][1]
+        if ((yi > y) != (yj > y)) and (x < (xj - xi) * (y - yi) / (yj - yi + 1e-12) + xi):
+            inside = not inside
+    return inside
+
+
+def _point_in_polygon(x, y, polygon):
+    """polygon = [outer_ring, hole1, hole2, ...]."""
+    if not _point_in_ring(x, y, polygon[0]):
+        return False
+    return not any(_point_in_ring(x, y, hole) for hole in polygon[1:])
+
+
+def derive_visited_states(places, us_states_path, min_places=1):
+    """Return sorted list of state NAMEs containing at least min_places places."""
+    if not os.path.isfile(us_states_path):
+        return []
+    states = json.load(open(us_states_path))
+    state_info = []
+    for feat in states:
+        name = feat['properties']['NAME']
+        geom = feat['geometry']
+        polys = [geom['coordinates']] if geom['type'] == 'Polygon' else geom['coordinates']
+        all_coords = [c for poly in polys for ring in poly for c in ring]
+        lngs = [c[0] for c in all_coords]
+        lats = [c[1] for c in all_coords]
+        state_info.append((name, (min(lngs), min(lats), max(lngs), max(lats)), polys))
+
+    counts = {}
+    # Dedupe places by ~110m bin so a single location isn't counted thousands of times.
+    seen = set()
+    for p in places:
+        lng, lat = p['geometry']['coordinates']
+        key = (round(lng, 3), round(lat, 3))
+        if key in seen:
+            continue
+        seen.add(key)
+        for name, (minx, miny, maxx, maxy), polys in state_info:
+            if not (minx <= lng <= maxx and miny <= lat <= maxy):
+                continue
+            if any(_point_in_polygon(lng, lat, poly) for poly in polys):
+                counts[name] = counts.get(name, 0) + 1
+                break
+    return sorted(n for n, c in counts.items() if c >= min_places)
+
+
 def save(filepath, places, flights, road_trips):
     json.dump(places, open(os.path.join(filepath, 'places.json'), 'w'))
     json.dump(flights, open(os.path.join(filepath, 'flights.json'), 'w'))
@@ -507,3 +558,17 @@ if __name__ == "__main__":
     resolve_place_names(flights, geocode_cache, mapbox_token, "flights")
 
     save(data_dir, places, flights, road_trips)
+
+    # Auto-derive visitedStates.json from places (point-in-polygon against
+    # us-states.json). Replaces manual maintenance. Tune STATE_MIN_PLACES up
+    # if you want layover-only states excluded.
+    STATE_MIN_PLACES = 2
+    visited_states = derive_visited_states(
+        places,
+        os.path.join(data_dir, "us-states.json"),
+        min_places=STATE_MIN_PLACES,
+    )
+    visited_path = os.path.abspath("../visitedStates.json")
+    with open(visited_path, 'w') as f:
+        json.dump(visited_states, f, indent=4)
+    print(f"derived {len(visited_states)} visited states: {visited_states}")
