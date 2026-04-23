@@ -25,6 +25,9 @@ FLIGHT_MIN_METERS = 50_000
 # Mapbox Directions caps a single request at 25 coordinates.
 MAPBOX_MAX_WAYPOINTS = 25
 MAPBOX_DIRECTIONS_URL = "https://api.mapbox.com/directions/v5/mapbox/driving/{coords}"
+MAPBOX_GEOCODE_URL = "https://api.mapbox.com/geocoding/v5/mapbox.places/{lng},{lat}.json"
+# Round coords to ~110m before caching so near-identical endpoints share a name.
+GEOCODE_PRECISION = 3
 # "simplified" ≈ 1 point / ~11m at equator — indistinguishable from "full" at
 # typical zoom but ~5-10× smaller output. Participates in the cache key so
 # flipping this value invalidates stale entries automatically.
@@ -177,6 +180,8 @@ def generate_new_format(data):
                     },
                     "distance": int(distance),
                     "activityType": "FLYING",
+                    "startTime": seg.get('startTime'),
+                    "endTime": seg.get('endTime'),
                 })
             elif atype in ROAD_TRIP_TYPES and distance > ROAD_TRIP_MIN_METERS:
                 path = _find_path_between(paths, seg['startTime'], seg['endTime']) or []
@@ -193,6 +198,8 @@ def generate_new_format(data):
                     },
                     "distance": int(distance),
                     "activityType": atype,
+                    "startTime": seg.get('startTime'),
+                    "endTime": seg.get('endTime'),
                     "waypointPath": {
                         "waypoints": [
                             {"latE7": _to_e7(lat), "lngE7": _to_e7(lng)}
@@ -359,6 +366,83 @@ def resolve_route_geometries(road_trips, output_path, mapbox_token):
     print(f"  done: hits={hits} misses={misses} fails={fails}")
 
 
+def _reverse_geocode(lat, lng, token):
+    """Return a human place name for (lat, lng) via Mapbox; None on failure."""
+    url = MAPBOX_GEOCODE_URL.format(lng=lng, lat=lat)
+    qs = urllib.parse.urlencode({
+        "access_token": token,
+        "types": "place,locality,region,country",
+        "limit": 1,
+    })
+    try:
+        with urllib.request.urlopen(f"{url}?{qs}", timeout=20) as resp:
+            body = json.load(resp)
+    except (urllib.error.URLError, TimeoutError) as e:
+        print(f"  geocode error: {e}")
+        return None
+    feats = body.get("features") or []
+    if not feats:
+        return None
+    return feats[0].get("place_name")
+
+
+def _geocode_key(lat, lng):
+    return (round(lat, GEOCODE_PRECISION), round(lng, GEOCODE_PRECISION))
+
+
+def _load_geocode_cache(paths):
+    """Seed cache from existing outputs' startPlace/endPlace fields."""
+    cache = {}
+    for path in paths:
+        if not os.path.isfile(path):
+            continue
+        try:
+            existing = json.load(open(path))
+        except (json.JSONDecodeError, OSError):
+            continue
+        for item in existing:
+            for loc_key, place_key in (("startLocation", "startPlace"),
+                                       ("endLocation", "endPlace")):
+                name = item.get(place_key)
+                if not name:
+                    continue
+                loc = item.get(loc_key) or {}
+                if "latitudeE7" not in loc or "longitudeE7" not in loc:
+                    continue
+                cache[_geocode_key(loc["latitudeE7"] / 1e7,
+                                   loc["longitudeE7"] / 1e7)] = name
+    return cache
+
+
+def resolve_place_names(items, cache, mapbox_token, label):
+    """Attach startPlace/endPlace via Mapbox reverse geocoding, cache deduped."""
+    hits = misses = fails = 0
+
+    def place_for(loc):
+        nonlocal hits, misses, fails
+        lat = loc["latitudeE7"] / 1e7
+        lng = loc["longitudeE7"] / 1e7
+        key = _geocode_key(lat, lng)
+        if key in cache:
+            hits += 1
+            return cache[key]
+        name = _reverse_geocode(lat, lng, mapbox_token)
+        if name is None:
+            fails += 1
+            return None
+        cache[key] = name
+        misses += 1
+        time.sleep(0.05)
+        return name
+
+    for i, item in enumerate(items):
+        item["startPlace"] = place_for(item["startLocation"])
+        item["endPlace"] = place_for(item["endLocation"])
+        if (i + 1) % 50 == 0:
+            print(f"  {label} {i + 1}/{len(items)} (hits={hits} misses={misses} fails={fails})")
+    print(f"  {label} done: hits={hits} misses={misses} fails={fails}")
+
+
 def save(filepath, places, flights, road_trips):
     json.dump(places, open(os.path.join(filepath, 'places.json'), 'w'))
     json.dump(flights, open(os.path.join(filepath, 'flights.json'), 'w'))
@@ -413,5 +497,13 @@ if __name__ == "__main__":
         os.path.join(data_dir, "road_trips.json"),
         mapbox_token,
     )
+
+    print("Resolving place names via Mapbox Geocoding...")
+    geocode_cache = _load_geocode_cache([
+        os.path.join(data_dir, "road_trips.json"),
+        os.path.join(data_dir, "flights.json"),
+    ])
+    resolve_place_names(road_trips, geocode_cache, mapbox_token, "road trips")
+    resolve_place_names(flights, geocode_cache, mapbox_token, "flights")
 
     save(data_dir, places, flights, road_trips)

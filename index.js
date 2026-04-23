@@ -69,6 +69,7 @@ Promise.all([
       getColor: routesColor,
       getWidth: vizConfig.routes.styles[0].weight,
       widthUnits: 'pixels',
+      pickable: true,
     }),
     new deck.ArcLayer({
       id: 'flights',
@@ -83,6 +84,7 @@ Promise.all([
       widthUnits: 'pixels',
       getHeight: 0.3,
       greatCircle: true,
+      pickable: true,
     }),
     new deck.ScatterplotLayer({
       id: 'places',
@@ -95,8 +97,50 @@ Promise.all([
     }),
   ];
 
+  const formatDate = (iso) => {
+    if (!iso) return '';
+    const d = new Date(iso);
+    return isNaN(d) ? '' : d.toISOString().slice(0, 10);
+  };
+  const formatKm = (m) => `${Math.round((m || 0) / 1000).toLocaleString()} km`;
+  const prettyActivity = (t) =>
+    (t || '').toLowerCase().replaceAll('_', ' ');
+  // "San Francisco, California, United States" -> "San Francisco, California"
+  const shortPlace = (p) =>
+    p ? p.split(', ').slice(0, 2).join(', ') : '';
+
+  const getTooltip = ({ object, layer }) => {
+    if (!object) return null;
+    if (layer.id === 'road-trips' || layer.id === 'flights') {
+      const start = formatDate(object.startTime);
+      const end = formatDate(object.endTime);
+      const range = start === end ? start : `${start} → ${end}`;
+      const title = layer.id === 'flights' ? 'Flight' : 'Road trip';
+      const places = object.startPlace && object.endPlace
+        ? `<div>${shortPlace(object.startPlace)} → ${shortPlace(object.endPlace)}</div>`
+        : '';
+      return {
+        html: `
+          <div><strong>${title}</strong></div>
+          ${places}
+          <div>${prettyActivity(object.activityType)} · ${formatKm(object.distance)}</div>
+          <div>${range}</div>
+        `,
+        style: {
+          background: 'rgba(34, 34, 34, 0.95)',
+          color: 'rgba(220, 221, 225, 0.9)',
+          font: '11px Lato',
+          padding: '6px 8px',
+          borderRadius: '2px',
+          boxShadow: '0 0 15px rgba(0,0,0,0.3)',
+        },
+      };
+    }
+    return null;
+  };
+
   map.on('load', () => {
-    const overlay = new deck.MapboxOverlay({ layers });
+    const overlay = new deck.MapboxOverlay({ layers, getTooltip });
     map.addControl(overlay);
   });
 
