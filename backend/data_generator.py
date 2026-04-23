@@ -25,6 +25,10 @@ FLIGHT_MIN_METERS = 50_000
 # Mapbox Directions caps a single request at 25 coordinates.
 MAPBOX_MAX_WAYPOINTS = 25
 MAPBOX_DIRECTIONS_URL = "https://api.mapbox.com/directions/v5/mapbox/driving/{coords}"
+# "simplified" ≈ 1 point / ~11m at equator — indistinguishable from "full" at
+# typical zoom but ~5-10× smaller output. Participates in the cache key so
+# flipping this value invalidates stale entries automatically.
+MAPBOX_OVERVIEW = "simplified"
 
 
 def _load_json_tolerant(path):
@@ -277,9 +281,13 @@ def _simplify_waypoints(pts, max_n=MAPBOX_MAX_WAYPOINTS):
 
 
 def _waypoints_cache_key(pts):
-    """Stable hash of the simplified waypoint list (5 decimal places ≈ 1m)."""
+    """Stable hash of the simplified waypoint list (5 decimal places ≈ 1m).
+
+    Includes MAPBOX_OVERVIEW so changing detail level invalidates stale entries.
+    """
     rounded = [(round(lat, 5), round(lng, 5)) for lat, lng in pts]
-    return hashlib.sha1(repr(rounded).encode()).hexdigest()
+    payload = (MAPBOX_OVERVIEW, rounded)
+    return hashlib.sha1(repr(payload).encode()).hexdigest()
 
 
 def _load_route_cache(path):
@@ -305,7 +313,7 @@ def _fetch_mapbox_directions(waypoints, token):
     url = MAPBOX_DIRECTIONS_URL.format(coords=urllib.parse.quote(coords, safe=",;"))
     qs = urllib.parse.urlencode({
         "geometries": "geojson",
-        "overview": "full",
+        "overview": MAPBOX_OVERVIEW,
         "access_token": token,
     })
     try:
