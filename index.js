@@ -30,10 +30,12 @@ const midpoint = (latlng1, latlng2) => {
 fetch('./config.json')
   .then(response => response.json())
   .then(data => {
-    const { mapConfig, vizConfig, stadiaApiKey, mapboxApiKey } = data;
+    const { mapConfig, vizConfig, stadiaApiKey } = data;
 
-    // Define map
-    let map = L.map(mapId, mapConfig);
+    // Define map. The large-padding SVG renderer prevents flight-curve arcs
+    // (whose control points sit well outside the chord) from being clipped at
+    // the default 10% padding when zoomed out.
+    let map = L.map(mapId, { ...mapConfig, renderer: L.svg({ padding: 2 }) });
 
     // Add the dark mode tilelayer; you can replace it with other tilelayer if you like
     L.tileLayer(`https://tiles.stadiamaps.com/tiles/alidade_smooth_dark/{z}/{x}/{y}{r}.png?api_key=${stadiaApiKey}`, {
@@ -78,19 +80,15 @@ fetch('./config.json')
     fetch('data/road_trips.json')
       .then(response => response.json())
       .then(data => {
-        data.map(trip => {
-          L.Routing.control({
-            router: L.Routing.mapbox(`${mapboxApiKey}`),
-            waypoints: trip['waypointPath']['waypoints'].filter(d => d).map(loc => {
-              const latLng = convertLatLng(loc['latE7'], loc['lngE7']);
-              return L.latLng(latLng[0], latLng[1]);
-            }),
-            lineOptions: vizConfig.routes,
-            show: false,
-            createMarker: function () { return null; },
-            fitSelectedRoutes: false
-          }).addTo(map, true);
-        })
+        const style = vizConfig.routes.styles[0];
+        data.forEach(trip => {
+          const coords = trip.geometry
+            ? trip.geometry.map(([lng, lat]) => [lat, lng])
+            : trip.waypointPath.waypoints
+                .filter(d => d)
+                .map(loc => convertLatLng(loc.latE7, loc.lngE7));
+          if (coords.length >= 2) L.polyline(coords, style).addTo(map);
+        });
       }
       )
 
