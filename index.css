@@ -142,6 +142,125 @@ body {
     .stats { display: none; }
 }
 
+.year-filter {
+    position: absolute;
+    top: 62px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 1;
+    padding: 8px 14px;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    font-family: "Lato", sans-serif;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    background: rgba(34, 34, 34, 0.75);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+    box-shadow: 0 2px 16px rgba(0, 0, 0, 0.3);
+    border-radius: 6px;
+    color: rgba(220, 221, 225, 0.9);
+}
+
+.year-filter .year-value {
+    font-weight: 700;
+    font-style: italic;
+    letter-spacing: 0.14em;
+    color: #f1c40f;
+    min-width: 3ch;
+    text-align: center;
+}
+
+.range-slider {
+    position: relative;
+    width: 180px;
+    height: 22px;
+    display: flex;
+    align-items: center;
+}
+
+.range-slider::before,
+.range-slider::after {
+    content: '';
+    position: absolute;
+    height: 3px;
+    border-radius: 2px;
+    pointer-events: none;
+}
+
+.range-slider::before {
+    left: 0;
+    right: 0;
+    background: rgba(220, 221, 225, 0.25);
+}
+
+.range-slider::after {
+    left: var(--from, 0%);
+    right: calc(100% - var(--to, 100%));
+    background: #f1c40f;
+    z-index: 1;
+}
+
+.range-slider .range-input {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 22px;
+    margin: 0;
+    appearance: none;
+    -webkit-appearance: none;
+    background: transparent;
+    pointer-events: none;
+    z-index: 2;
+}
+
+/* Only the thumb is interactive so both sliders can be grabbed. */
+.range-slider .range-input::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    background: #f1c40f;
+    cursor: pointer;
+    pointer-events: auto;
+    border: 2px solid rgba(34, 34, 34, 0.8);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
+}
+
+.range-slider .range-input::-moz-range-thumb {
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    background: #f1c40f;
+    cursor: pointer;
+    pointer-events: auto;
+    border: 2px solid rgba(34, 34, 34, 0.8);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
+}
+
+.range-slider .range-input::-webkit-slider-runnable-track,
+.range-slider .range-input::-moz-range-track {
+    background: transparent;
+    border: 0;
+}
+
+body.light .year-filter {
+    background: rgba(255, 255, 255, 0.85);
+    color: rgba(34, 34, 34, 0.9);
+}
+
+body.light .range-slider::before {
+    background: rgba(34, 34, 34, 0.2);
+}
+
+body.light .range-slider .range-input::-webkit-slider-thumb,
+body.light .range-slider .range-input::-moz-range-thumb {
+    border-color: rgba(255, 255, 255, 0.9);
+}
+
 .theme-icons {
     position: absolute;
     right: 16px;

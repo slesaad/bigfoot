@@ -63,6 +63,22 @@ Promise.all([
     'places': true,
   };
 
+  // Year filter — two-thumb range. Trips/flights with startTime outside the
+  // range are hidden. Places/states lack times, so they stay unfiltered.
+  const allStartYears = [...roadTrips, ...flights]
+    .map(x => x.startTime)
+    .filter(Boolean)
+    .map(t => new Date(t).getFullYear());
+  const minYear = allStartYears.length ? Math.min(...allStartYears) : null;
+  const maxYear = allStartYears.length ? Math.max(...allStartYears) : null;
+  let fromYear = minYear;
+  let toYear = maxYear;
+  const yearOf = (x) => x.startTime ? new Date(x.startTime).getFullYear() : null;
+  const withinYear = (x) => {
+    const y = yearOf(x);
+    return y === null || (y >= fromYear && y <= toYear);
+  };
+
   // Layers are immutable in deck.gl — rebuild on each toggle and setProps.
   const buildLayers = () => [
     new deck.GeoJsonLayer({
@@ -75,7 +91,7 @@ Promise.all([
     }),
     new deck.PathLayer({
       id: 'road-trips',
-      data: roadTrips,
+      data: roadTrips.filter(withinYear),
       getPath: t =>
         t.geometry && t.geometry.length >= 2
           ? t.geometry
@@ -88,7 +104,7 @@ Promise.all([
     }),
     new deck.ArcLayer({
       id: 'flights',
-      data: flights,
+      data: flights.filter(withinYear),
       getSourcePosition: f =>
         fromE7(f.startLocation.latitudeE7, f.startLocation.longitudeE7),
       getTargetPosition: f =>
@@ -207,29 +223,76 @@ Promise.all([
   });
   document.body.appendChild(legend);
 
-  // Stats overlay in the header.
-  const totalDriven = roadTrips.reduce((s, t) => s + (t.distance || 0), 0);
-  const totalFlown = flights.reduce((s, f) => s + (f.distance || 0), 0);
+  // Stats overlay in the header — recomputed from the filtered trip/flight set.
   const fmtKm = (m) => `${Math.round(m / 1000).toLocaleString()} km`;
-  const allTimes = [...roadTrips, ...flights]
-    .map(x => x.startTime).filter(Boolean);
-  const sinceYear = allTimes.length
-    ? Math.min(...allTimes.map(t => new Date(t).getFullYear()))
-    : null;
   const stats = document.createElement('div');
   stats.className = 'stats';
-  const statItems = [
-    { text: `${visited.length} states` },
-    { text: `${roadTrips.length} road trips` },
-    { text: `${flights.length} flights` },
-    { text: `${fmtKm(totalDriven)} driven` },
-    { text: `${fmtKm(totalFlown)} flown` },
-  ];
-  if (sinceYear) statItems.unshift({ text: `since ${sinceYear}`, cls: 'since' });
-  stats.innerHTML = statItems
-    .map(({ text, cls }) => `<span${cls ? ` class="${cls}"` : ''}>${text}</span>`)
-    .join('');
   document.querySelector('.header').appendChild(stats);
+  const renderStats = () => {
+    const trips = roadTrips.filter(withinYear);
+    const flts = flights.filter(withinYear);
+    const driven = trips.reduce((s, t) => s + (t.distance || 0), 0);
+    const flown = flts.reduce((s, f) => s + (f.distance || 0), 0);
+    const items = [
+      { text: `${visited.length} states` },
+      { text: `${trips.length} road trips` },
+      { text: `${flts.length} flights` },
+      { text: `${fmtKm(driven)} driven` },
+      { text: `${fmtKm(flown)} flown` },
+    ];
+    if (fromYear !== null) {
+      // "since 2015" implies "through now"; switch to "2015—2020" when the
+      // upper bound is pulled back, else it's misleading.
+      const rangeText = toYear < maxYear
+        ? `${fromYear}–${toYear}`
+        : `since ${fromYear}`;
+      items.unshift({ text: rangeText, cls: 'since' });
+    }
+    stats.innerHTML = items
+      .map(({ text, cls }) => `<span${cls ? ` class="${cls}"` : ''}>${text}</span>`)
+      .join('');
+  };
+  renderStats();
+
+  // Year filter — dual-thumb range (two overlapping native sliders).
+  if (minYear !== null && minYear !== maxYear) {
+    const yearEl = document.createElement('div');
+    yearEl.className = 'year-filter';
+    yearEl.innerHTML = `
+      <span class="year-value year-from">${fromYear}</span>
+      <div class="range-slider">
+        <input type="range" class="range-input range-from-input"
+               min="${minYear}" max="${maxYear}" value="${fromYear}" step="1">
+        <input type="range" class="range-input range-to-input"
+               min="${minYear}" max="${maxYear}" value="${toYear}" step="1">
+      </div>
+      <span class="year-value year-to">${toYear}</span>
+    `;
+    const fromInput = yearEl.querySelector('.range-from-input');
+    const toInput = yearEl.querySelector('.range-to-input');
+    const fromValueEl = yearEl.querySelector('.year-from');
+    const toValueEl = yearEl.querySelector('.year-to');
+    const rangeSlider = yearEl.querySelector('.range-slider');
+    const pct = (y) => ((y - minYear) / (maxYear - minYear)) * 100;
+    const syncFill = () => {
+      rangeSlider.style.setProperty('--from', `${pct(fromYear)}%`);
+      rangeSlider.style.setProperty('--to', `${pct(toYear)}%`);
+    };
+    const onInput = () => {
+      // Read sorted so thumbs can swap freely without crossing logic.
+      fromYear = Math.min(fromInput.valueAsNumber, toInput.valueAsNumber);
+      toYear = Math.max(fromInput.valueAsNumber, toInput.valueAsNumber);
+      fromValueEl.textContent = fromYear;
+      toValueEl.textContent = toYear;
+      syncFill();
+      renderStats();
+      if (overlay) overlay.setProps({ layers: buildLayers() });
+    };
+    fromInput.addEventListener('input', onInput);
+    toInput.addEventListener('input', onInput);
+    syncFill();
+    document.body.appendChild(yearEl);
+  }
 
   // Theme toggle — sun/moon icons in the header; active one is highlighted.
   const sunSvg = `<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><line x1="12" y1="2" x2="12" y2="4"/><line x1="12" y1="20" x2="12" y2="22"/><line x1="4.93" y1="4.93" x2="6.34" y2="6.34"/><line x1="17.66" y1="17.66" x2="19.07" y2="19.07"/><line x1="2" y1="12" x2="4" y2="12"/><line x1="20" y1="12" x2="22" y2="12"/><line x1="4.93" y1="19.07" x2="6.34" y2="17.66"/><line x1="17.66" y1="6.34" x2="19.07" y2="4.93"/></svg>`;
