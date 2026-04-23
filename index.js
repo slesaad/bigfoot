@@ -1,149 +1,116 @@
 const mapId = 'mapid';
 
-/**
- * Utils
- */
+// Old Takeout-format data used 32-bit wrap-around on negative E7s. Guard
+// against that here so stale outputs keep rendering; new data is clean signed.
+const fromE7 = (lat, lng) => {
+  const unwrapLat = lat > 900_000_000 ? lat - 4_294_967_296 : lat;
+  const unwrapLng = lng > 1_800_000_000 ? lng - 4_294_967_296 : lng;
+  return [unwrapLng / 1e7, unwrapLat / 1e7]; // [lng, lat] for deck.gl
+};
 
-const convertLatLng = (lat, lng) => {
-  const newLat = (lat > 900000000 ? (lat - 4294967296) : lat) / 10000000;
-  const newLng = (lng > 1800000000 ? (lng - 4294967296) : lng) / 10000000;
-  return [newLat, newLng];
-}
+// Parse "#rrggbb" plus optional alpha (0..1) into [r, g, b, a] for deck.gl.
+const hexToRgba = (hex, alpha = 1) => {
+  const h = hex.replace('#', '');
+  return [
+    parseInt(h.slice(0, 2), 16),
+    parseInt(h.slice(2, 4), 16),
+    parseInt(h.slice(4, 6), 16),
+    Math.round(alpha * 255),
+  ];
+};
 
-const midpoint = (latlng1, latlng2) => {
-  let offsetX = latlng2[1] - latlng1[1],
-    offsetY = latlng2[0] - latlng1[0];
-  let r = Math.sqrt(Math.pow(offsetX, 2) + Math.pow(offsetY, 2)),
-    theta = Math.atan2(offsetY, offsetX);
-  let thetaOffset = (3.14 / 10);
-  let r2 = (r / 2) / (Math.cos(thetaOffset)),
-    theta2 = theta + thetaOffset;
-  let midpointX = (r2 * Math.cos(theta2)) + latlng1[1],
-    midpointY = (r2 * Math.sin(theta2)) + latlng1[0];
-  return [midpointY, midpointX];
-}
+Promise.all([
+  fetch('./config.json').then(r => r.json()),
+  fetch('./visitedStates.json').then(r => r.json()),
+  fetch('data/us-states.json').then(r => r.json()),
+  fetch('data/road_trips.json').then(r => r.json()),
+  fetch('data/flights.json').then(r => r.json()),
+  fetch('data/places.json').then(r => r.json()),
+]).then(([config, visited, allStates, roadTrips, flights, places]) => {
+  const { mapConfig, vizConfig, stadiaApiKey } = config;
 
-/**
- * Main codebase
- */
+  const map = new maplibregl.Map({
+    container: mapId,
+    style: `https://tiles.stadiamaps.com/styles/alidade_smooth_dark.json?api_key=${stadiaApiKey}`,
+    center: [mapConfig.center[1], mapConfig.center[0]], // MapLibre is [lng, lat]
+    zoom: mapConfig.zoom,
+    maxZoom: mapConfig.maxZoom,
+    minZoom: mapConfig.minZoom,
+  });
 
-fetch('./config.json')
-  .then(response => response.json())
-  .then(data => {
-    const { mapConfig, vizConfig, stadiaApiKey } = data;
+  const visitedSet = new Set(visited.map(s => s.toLowerCase()));
+  const visitedFeatures = allStates.filter(f =>
+    visitedSet.has(f.properties.NAME.toLowerCase()),
+  );
 
-    // Define map. The large-padding SVG renderer prevents flight-curve arcs
-    // (whose control points sit well outside the chord) from being clipped at
-    // the default 10% padding when zoomed out.
-    let map = L.map(mapId, { ...mapConfig, renderer: L.svg({ padding: 2 }) });
+  const placesColor = hexToRgba(
+    vizConfig.points.fillColor,
+    vizConfig.points.fillOpacity,
+  );
+  const statesColor = hexToRgba(vizConfig.states.style.color, vizConfig.states.style.opacity);
+  const routesColor = hexToRgba(vizConfig.routes.styles[0].color, vizConfig.routes.styles[0].opacity);
+  const flightsColor = hexToRgba(vizConfig.flights.color, 1);
 
-    // Add the dark mode tilelayer; you can replace it with other tilelayer if you like
-    L.tileLayer(`https://tiles.stadiamaps.com/tiles/alidade_smooth_dark/{z}/{x}/{y}{r}.png?api_key=${stadiaApiKey}`, {
-      maxZoom: 20,
-      attribution: '© <a href="https://stadiamaps.com/">Stadia Maps</a>, © <a href="https://openmaptiles.org/">OpenMapTiles</a> © <a href="http://openstreetmap.org">OpenStreetMap</a> contributors'
-    }).addTo(map);
+  const layers = [
+    new deck.GeoJsonLayer({
+      id: 'states',
+      data: { type: 'FeatureCollection', features: visitedFeatures },
+      stroked: false,
+      filled: true,
+      getFillColor: statesColor,
+    }),
+    new deck.PathLayer({
+      id: 'road-trips',
+      data: roadTrips,
+      getPath: t =>
+        t.geometry && t.geometry.length >= 2
+          ? t.geometry
+          : t.waypointPath.waypoints.map(w => fromE7(w.latE7, w.lngE7)),
+      getColor: routesColor,
+      getWidth: vizConfig.routes.styles[0].weight,
+      widthUnits: 'pixels',
+    }),
+    new deck.ArcLayer({
+      id: 'flights',
+      data: flights,
+      getSourcePosition: f =>
+        fromE7(f.startLocation.latitudeE7, f.startLocation.longitudeE7),
+      getTargetPosition: f =>
+        fromE7(f.endLocation.latitudeE7, f.endLocation.longitudeE7),
+      getSourceColor: flightsColor,
+      getTargetColor: flightsColor,
+      getWidth: vizConfig.flights.weight,
+      widthUnits: 'pixels',
+      getHeight: 0.3,
+      greatCircle: true,
+    }),
+    new deck.ScatterplotLayer({
+      id: 'places',
+      data: places,
+      getPosition: f => f.geometry.coordinates,
+      getRadius: vizConfig.points.radius,
+      radiusUnits: 'pixels',
+      stroked: false,
+      getFillColor: placesColor,
+    }),
+  ];
 
-    // US States
+  map.on('load', () => {
+    const overlay = new deck.MapboxOverlay({ layers });
+    map.addControl(overlay);
+  });
 
-    let usStatesLayer = L.geoJSON([], vizConfig.states).addTo(map, true);
-
-    Promise.all([
-      fetch('./visitedStates.json'),
-      fetch('data/us-states.json')
-      ]).then(responses => 
-        Promise.all(responses.map(response => response.json()))
-      ).then(function (data) {
-        const visitedStates = data[0];
-        usStatesLayer.addData(data[1].filter(feature => visitedStates.some(state => 
-          state.toLowerCase() === feature["properties"]["NAME"].toLowerCase())))
-      }).catch(error =>
-        console.log(error)
-      );
-
-    // Animation for flight curves
-
-    if (typeof document.getElementById(mapId).animate === "function") {
-      var durationBase = 2000;
-      var duration = Math.sqrt(Math.log(150)) * durationBase;
-      // Scales the animation duration so that it's related to the line length
-      // (but such that the longest and shortest lines' durations are not too different).
-      // You may want to use a different scaling factor.
-      vizConfig.flights.animate = {
-        duration: duration,
-        easing: 'ease-in-out',
-        direction: 'alternate'
-      }
-    }
-
-    // Road trip data
-
-    fetch('data/road_trips.json')
-      .then(response => response.json())
-      .then(data => {
-        const style = vizConfig.routes.styles[0];
-        data.forEach(trip => {
-          const coords = trip.geometry
-            ? trip.geometry.map(([lng, lat]) => [lat, lng])
-            : trip.waypointPath.waypoints
-                .filter(d => d)
-                .map(loc => convertLatLng(loc.latE7, loc.lngE7));
-          if (coords.length >= 2) L.polyline(coords, style).addTo(map);
-        });
-      }
-      )
-
-    // Flight data
-    fetch('data/flights.json')
-      .then(response => response.json())
-      .then(data => {
-
-        data.map(flight => {
-          const latlng1 = convertLatLng(flight['startLocation']['latitudeE7'], flight['startLocation']['longitudeE7']);
-          const latlng2 = convertLatLng(flight['endLocation']['latitudeE7'], flight['endLocation']['longitudeE7']);
-          const midpointLatLng = midpoint(
-            [latlng1[0], latlng1[1]],
-            [latlng2[0], latlng2[1]]
-          );
-
-          L.curve(
-            [
-              'M', latlng1,
-              'Q', midpointLatLng,
-              latlng2
-            ], vizConfig.flights
-          ).addTo(map);
-
-        })
-
-      }
-      )
-
-    // Places data
-    fetch('data/places.json')
-      .then(response => response.json())
-      .then(data => {
-        L.geoJSON(data, {
-          pointToLayer: (feature, latlng) => L.circleMarker(latlng, vizConfig.points)
-        }).addTo(map);
-      }
-      )
-
-    /* Legend specific */
-    var legend = L.control({ position: "bottomright" });
-
-    legend.onAdd = function(map) {
-      var div = L.DomUtil.create("div", "legend");
-      div.innerHTML += "<h4>Legend</h4>";
-      div.innerHTML += `<i style="background: ${vizConfig.points.fillColor}"></i><span>Places visited</span><br>`;
-      div.innerHTML += `<i style="background: ${vizConfig.routes.styles[0].color}"></i><span>Road trips</span><br>`;
-      div.innerHTML += `<i style="background: ${vizConfig.flights.color}"></i><span>Flights</span><br>`;
-      div.innerHTML += `<i style="background: ${vizConfig.states.style.color}"></i><span>States visited</span><br>`;
-      
-      return div;
-    };
-
-    legend.addTo(map);
-
-  }
-  )
-  .catch(err => console.log(err))
+  // Legend
+  const legend = document.createElement('div');
+  legend.className = 'legend';
+  const swatch = color =>
+    `<i style="background: ${color}"></i>`;
+  legend.innerHTML = `
+    <h4>Legend</h4>
+    ${swatch(vizConfig.points.fillColor)}<span>Places visited</span><br>
+    ${swatch(vizConfig.routes.styles[0].color)}<span>Road trips</span><br>
+    ${swatch(vizConfig.flights.color)}<span>Flights</span><br>
+    ${swatch(vizConfig.states.style.color)}<span>States visited</span><br>
+  `;
+  document.body.appendChild(legend);
+}).catch(err => console.error(err));

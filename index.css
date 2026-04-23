@@ -13,7 +13,7 @@ body {
     position: absolute;
     top: 0;
     left: 0;
-    
+
     height: 50px;
     width: 100%;
 
@@ -39,32 +39,18 @@ body {
     filter: invert(100%) opacity(70%);
 }
 
-path.leaflet-interactive.animate {
-    stroke-dasharray: 1920;
-    stroke-dashoffset: 1920;
-    animation: dash 20s linear 3s forwards;
-}
-
-@keyframes dash {
-    to {
-        stroke-dashoffset: 0;
-    }
-}
-
-.leaflet-routing-container {
-    visibility: hidden;
-}
-
 /*Legend specific*/
 .legend {
+    position: absolute;
+    bottom: 20px;
+    right: 20px;
+    z-index: 1;
     padding: 6px 8px;
     font: 11px Lato;
-    background: white;
     background: rgba(220, 221, 225, 0.3);
     box-shadow: 0 0 15px rgba(0, 0, 0, 0.2);
     border-radius: 2px;
     line-height: 24px;
-    /* color: #353b48; */
     color: rgba(220, 221, 225, 0.5);
 }
 
