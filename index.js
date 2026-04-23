@@ -207,6 +207,30 @@ Promise.all([
   });
   document.body.appendChild(legend);
 
+  // Stats overlay in the header.
+  const totalDriven = roadTrips.reduce((s, t) => s + (t.distance || 0), 0);
+  const totalFlown = flights.reduce((s, f) => s + (f.distance || 0), 0);
+  const fmtKm = (m) => `${Math.round(m / 1000).toLocaleString()} km`;
+  const allTimes = [...roadTrips, ...flights]
+    .map(x => x.startTime).filter(Boolean);
+  const sinceYear = allTimes.length
+    ? Math.min(...allTimes.map(t => new Date(t).getFullYear()))
+    : null;
+  const stats = document.createElement('div');
+  stats.className = 'stats';
+  const statItems = [
+    { text: `${visited.length} states` },
+    { text: `${roadTrips.length} road trips` },
+    { text: `${flights.length} flights` },
+    { text: `${fmtKm(totalDriven)} driven` },
+    { text: `${fmtKm(totalFlown)} flown` },
+  ];
+  if (sinceYear) statItems.unshift({ text: `since ${sinceYear}`, cls: 'since' });
+  stats.innerHTML = statItems
+    .map(({ text, cls }) => `<span${cls ? ` class="${cls}"` : ''}>${text}</span>`)
+    .join('');
+  document.querySelector('.header').appendChild(stats);
+
   // Theme toggle — sun/moon icons in the header; active one is highlighted.
   const sunSvg = `<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><line x1="12" y1="2" x2="12" y2="4"/><line x1="12" y1="20" x2="12" y2="22"/><line x1="4.93" y1="4.93" x2="6.34" y2="6.34"/><line x1="17.66" y1="17.66" x2="19.07" y2="19.07"/><line x1="2" y1="12" x2="4" y2="12"/><line x1="20" y1="12" x2="22" y2="12"/><line x1="4.93" y1="19.07" x2="6.34" y2="17.66"/><line x1="17.66" y1="6.34" x2="19.07" y2="4.93"/></svg>`;
   const moonSvg = `<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>`;
