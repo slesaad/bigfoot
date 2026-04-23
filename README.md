@@ -1,32 +1,55 @@
 # Bigfoot (<img src="/assets/logo.png" />)
 
-Bigfoot is a web app that traces the places you've been to, your road trips and your flights on a map.
+Bigfoot is a web app that traces the places you've been to, your road trips, and your flights on a map.
 
-- Bigfoot uses the location history data that can be obtained from Google Maps.
-- The data is then processed into a format that the frontend data can consume.
-- The frontend reads this processed data and renders it in a map.
+- Bigfoot reads location history from your Google Maps Timeline.
+- A Python pipeline processes it into frontend-friendly JSONs, enriching road trips with Mapbox driving geometries and adding human-readable place names.
+- The frontend renders it with MapLibre GL as a basemap and deck.gl layers on top.
+
+## Features
+
+- scatter of every place visited.
+- Road trips rendered as actual driving routes (via Mapbox Directions, cached on disk).
+- Flights as great-circle arcs.
+- US states you've visited shaded red (auto-derived from places).
+- Hover tooltips on road trips and flights with start → end place names, date, distance.
+- Click legend rows to toggle layers on/off.
+- Sun/moon toggle for dark/light basemap.
+- Intro fly-in animation on load.
 
 ## Visualizing your own location history
 
-Follow the given steps to set up your own bigfoot visualization.
-
 ### Step I: Download data
 
-Download the location history data from your Google Maps account. Check out this [HowTo](https://www.howtogeek.com/725241/how-to-download-your-google-maps-data/) article to learn how to do that.
+As of 2024, Google moved Timeline from cloud to **on-device** storage. Export directly from the Google Maps app:
 
-Copy the downloaded location history folder to the `data/` directory, so it looks like:
+- **Android**: Settings → Location → Location Services → Timeline → **Export Timeline data** → share/save `Timeline.json`.
+- **iPhone**: Google Maps → profile picture → Settings → Personal content → Export Timeline data **Export Timeline data** → share/save.
 
-``` plain
-|data
-   |location_history
-      |2021
-      |2020
-      ...
+Transfer the file to your computer and drop it in `data/`:
+
+```plain
+data/
+  Timeline.json
 ```
 
-### Step II: Process Data
+The pipeline also supports the **legacy** Google Takeout `Semantic Location History/` format — if you still have one of those folders, place it at `data/location_history/` and the script will use it.
 
-``` bash
+### Step II: Get a Mapbox token
+
+You need a Mapbox token with Directions + Geocoding scopes for the data pipeline (one-time, used only while generating data). Create one at [Mapbox → access tokens](https://account.mapbox.com/access-tokens/) with the default public scopes and **no URL restrictions** (so server-side calls from your laptop aren't blocked).
+
+Drop it in `backend/.env`:
+
+```bash
+MAPBOX_TOKEN=pk.your_token_here
+```
+
+(`backend/.env` is gitignored.)
+
+### Step III: Process data
+
+```bash
 cd backend/
 python -m venv env
 source env/bin/activate
@@ -35,31 +58,36 @@ python data_generator.py
 cd ..
 ```
 
-### Step III: Configure visualization
+First run makes ~400 Mapbox Directions calls and ~600 Geocoding calls (well inside the free tier). Results are cached inline in `data/road_trips.json` and `data/flights.json`, so subsequent runs are nearly free.
 
-Update `config.json` with necessary configuration changes.
+Outputs:
+- `data/places.json` — GeoJSON points of every visit.
+- `data/flights.json` — flights with start/end coords, place names, distance, dates.
+- `data/road_trips.json` — road trips with cached driving geometry, place names, distance, dates.
+- `visitedStates.json` — auto-derived from places via point-in-polygon against `us-states.json`.
 
-**<span style="color:#c0392b">IMPORTANT</span>**: Please update the API keys by creating your own accounts at [Mapbox](https://account.mapbox.com/access-tokens/) and [Stadia Maps](https://client.stadiamaps.com/dashboard/). The API keys in the file are domain-restricted and will not work for you.
+### Step IV: Configure (optional)
 
-Update `visitedStates.json` with the states you've visited.
-<span style="font-size:13px">***TODO***: Automatically get it from location history. (I didn't want to count states that I've had a layover at as "visited")</span>
+`config.json` controls map center, zoom, layer colors, and the Stadia Maps API key. Colors/radius/opacity for each layer are all driven from there. The bundled Stadia key is domain-restricted — create your own at [Stadia Maps](https://client.stadiamaps.com/dashboard/) and replace `stadiaApiKey`.
 
-### Step IV: Serve
+### Step V: Serve
 
-Serve the webpage from the root `bigfoot/` directory using python http server.
+Serve the repo root with any static file server:
 
-``` bash
+```bash
 python -m http.server 3000
 ```
 
-Open your browser and go to `localhost:3000`
+Open `localhost:3000`.
 
-## Deploying to github pages
+## Deploying to GitHub Pages
 
-Fork the repo. Follow all the steps above to visualize your data. Push the updated data (`flights.json`, `places.json`, `road_trips.json`, `config.json` and `visitedStates.json`) to github. Be careful not to push your location history to a public github repository.
+Fork the repo, follow the steps above, and push the generated data (`flights.json`, `places.json`, `road_trips.json`, `visitedStates.json`, `config.json`). **Do not push your `Timeline.json`** — it contains precise location history. It's gitignored by default; keep it that way.
 
-Activate github pages for your repository by following steps from [this article](https://towardsdatascience.com/how-to-create-a-free-github-pages-website-53743d7524e1#:~:text=Now%20you%E2%80%99re%20going%20to%20take%20advantage%20of%20GitHub%20Pages.%20Go%20to%20your%20GitHub%20repository%20and%20click%20%E2%80%9CSettings.%E2%80%9D). You'll then have your bigfoot hosted at `username.github.io/bigfoot`.
+Enable GitHub Pages in repo Settings. You'll have the site at `username.github.io/bigfoot`.
 
-## Disclaimer
+## Tech stack
 
-The project still is under-development. I plan to update the service to be more user friendly and plug-n-play so that people with no coding skill can set it up. Stay tuned!
+- **Frontend**: [MapLibre GL](https://maplibre.org) (basemap) + [deck.gl](https://deck.gl) layers (`GeoJsonLayer`, `PathLayer`, `ArcLayer`, `ScatterplotLayer`) via `MapboxOverlay`.
+- **Basemap**: [Stadia Maps](https://stadiamaps.com) `alidade_smooth` / `alidade_smooth_dark` vector styles.
+- **Data pipeline**: Python stdlib + `pgeocode` (only for the legacy Takeout path), `urllib` calls to Mapbox Directions & Geocoding.

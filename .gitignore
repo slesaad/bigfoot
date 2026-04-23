@@ -1,3 +1,9 @@
 .vscode/
 env/
 .env
+*.pyc
+.DS_Store
+# Raw location history — contains precise movement data; keep local only.
+data/Timeline.json
+data/Timeline-new.json
+data/location_history/
