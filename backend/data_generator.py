@@ -111,10 +111,6 @@ def _is_new_format(data):
     return isinstance(data, dict) and 'semanticSegments' in data
 
 
-def _is_old_monthly_format(data):
-    return isinstance(data, dict) and 'timelineObjects' in data
-
-
 def _find_path_between(paths, start_time, end_time):
     """Pick the timelinePath whose time window overlaps [start_time, end_time]."""
     for p in paths:
