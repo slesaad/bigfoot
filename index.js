@@ -33,7 +33,7 @@ Promise.all([
     container: mapId,
     style: `https://tiles.stadiamaps.com/styles/alidade_smooth_dark.json?api_key=${stadiaApiKey}`,
     center: [mapConfig.center[1], mapConfig.center[0]], // MapLibre is [lng, lat]
-    zoom: mapConfig.zoom,
+    zoom: 0, // world view on load; flyTo animates to configured zoom
     maxZoom: mapConfig.maxZoom,
     minZoom: mapConfig.minZoom,
   });
@@ -155,6 +155,13 @@ Promise.all([
   map.on('load', () => {
     overlay = new deck.MapboxOverlay({ layers: buildLayers(), getTooltip });
     map.addControl(overlay);
+    map.flyTo({
+      center: [mapConfig.center[1], mapConfig.center[0]],
+      zoom: mapConfig.zoom,
+      duration: 3000,
+      curve: 1.6,
+      essential: true,
+    });
   });
 
   // Legend — click a row to toggle that layer.
