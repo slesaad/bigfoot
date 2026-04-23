@@ -19,6 +19,26 @@ const hexToRgba = (hex, alpha = 1) => {
   ];
 };
 
+const hslToRgba = (h, s, l, a = 1) => {
+  s /= 100; l /= 100;
+  const c = (1 - Math.abs(2 * l - 1)) * s;
+  const x = c * (1 - Math.abs(((h / 60) % 2) - 1));
+  const m = l - c / 2;
+  let r = 0, g = 0, b = 0;
+  if (h < 60) [r, g, b] = [c, x, 0];
+  else if (h < 120) [r, g, b] = [x, c, 0];
+  else if (h < 180) [r, g, b] = [0, c, x];
+  else if (h < 240) [r, g, b] = [0, x, c];
+  else if (h < 300) [r, g, b] = [x, 0, c];
+  else [r, g, b] = [c, 0, x];
+  return [
+    Math.round((r + m) * 255),
+    Math.round((g + m) * 255),
+    Math.round((b + m) * 255),
+    Math.round(a * 255),
+  ];
+};
+
 Promise.all([
   fetch('./config.json').then(r => r.json()),
   fetch('./visitedStates.json').then(r => r.json()),
@@ -54,7 +74,33 @@ Promise.all([
   );
   const statesColor = hexToRgba(vizConfig.states.style.color, vizConfig.states.style.opacity);
   const routesColor = hexToRgba(vizConfig.routes.styles[0].color, vizConfig.routes.styles[0].opacity);
-  const flightsColor = hexToRgba(vizConfig.flights.color, 1);
+
+  // Flight color = year position along an HSL gradient. Tweak these to
+  // re-skin the flights, the legend swatch, and the range-slider fill at once.
+  const FLIGHT_HUE_START = 180; // 180 = teal
+  const FLIGHT_HUE_END = 350;   // 350 = coral
+  const FLIGHT_SATURATION = 40; // 0 = grey, 100 = neon
+  const FLIGHT_LIGHTNESS = 60;  // 50 = mid, higher = paler
+
+  const flightYears = flights.map(f => new Date(f.startTime).getFullYear())
+    .filter(y => !Number.isNaN(y));
+  const fMin = flightYears.length ? Math.min(...flightYears) : 0;
+  const fMax = flightYears.length ? Math.max(...flightYears) : 0;
+  const flightHueFor = (year) => {
+    if (fMax === fMin) return FLIGHT_HUE_START;
+    const t = (year - fMin) / (fMax - fMin); // 0..1
+    return FLIGHT_HUE_START + t * (FLIGHT_HUE_END - FLIGHT_HUE_START);
+  };
+  const flightColorFor = (f) =>
+    hslToRgba(
+      flightHueFor(new Date(f.startTime).getFullYear()),
+      FLIGHT_SATURATION,
+      FLIGHT_LIGHTNESS,
+    );
+  const hueStop = (hue) => `hsl(${hue} ${FLIGHT_SATURATION}% ${FLIGHT_LIGHTNESS}%)`;
+  const flightGradient = `linear-gradient(to right, ${hueStop(FLIGHT_HUE_START)}, ${hueStop((FLIGHT_HUE_START + FLIGHT_HUE_END) / 2)}, ${hueStop(FLIGHT_HUE_END)})`;
+  // Expose to CSS (range-slider::after reads this).
+  document.documentElement.style.setProperty('--flight-gradient', flightGradient);
 
   const visibility = {
     'states': true,
@@ -109,8 +155,8 @@ Promise.all([
         fromE7(f.startLocation.latitudeE7, f.startLocation.longitudeE7),
       getTargetPosition: f =>
         fromE7(f.endLocation.latitudeE7, f.endLocation.longitudeE7),
-      getSourceColor: flightsColor,
-      getTargetColor: flightsColor,
+      getSourceColor: flightColorFor,
+      getTargetColor: flightColorFor,
       getWidth: vizConfig.flights.weight,
       widthUnits: 'pixels',
       getHeight: 0.3,
@@ -206,11 +252,17 @@ Promise.all([
     `<label data-layer="${layerId}">
       <i style="background: ${color}"></i><span>${label}</span>
     </label>`;
+  // Flights use a year→hue gradient, so render a gradient swatch instead.
+  const flightRow = `
+    <label data-layer="flights">
+      <i style="background: ${flightGradient}"></i>
+      <span>Flights (${fMin}–${fMax})</span>
+    </label>`;
   legend.innerHTML = `
     <h4>Legend</h4>
     ${row('places', vizConfig.points.fillColor, 'Places visited')}
     ${row('road-trips', vizConfig.routes.styles[0].color, 'Road trips')}
-    ${row('flights', vizConfig.flights.color, 'Flights')}
+    ${flightRow}
     ${row('states', vizConfig.states.style.color, 'States visited')}
   `;
   legend.addEventListener('click', (e) => {

@@ -197,9 +197,13 @@ body {
 }
 
 .range-slider::after {
-    left: var(--from, 0%);
-    right: calc(100% - var(--to, 100%));
-    background: #f1c40f;
+    left: 0;
+    right: 0;
+    /* Set from index.js so it stays in sync with the flight arc colors. */
+    background: var(--flight-gradient);
+    /* Clip to the [from, to] slice so the visible gradient slice aligns with
+       the year position on the full track, matching the flight palette. */
+    clip-path: inset(0 calc(100% - var(--to, 100%)) 0 var(--from, 0%));
     z-index: 1;
 }
 
@@ -223,10 +227,10 @@ body {
     width: 14px;
     height: 14px;
     border-radius: 50%;
-    background: #f1c40f;
+    background: rgba(245, 245, 245, 0.98);
     cursor: pointer;
     pointer-events: auto;
-    border: 2px solid rgba(34, 34, 34, 0.8);
+    border: 1px solid rgba(34, 34, 34, 0.5);
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
 }
 
@@ -234,10 +238,10 @@ body {
     width: 14px;
     height: 14px;
     border-radius: 50%;
-    background: #f1c40f;
+    background: rgba(245, 245, 245, 0.98);
     cursor: pointer;
     pointer-events: auto;
-    border: 2px solid rgba(34, 34, 34, 0.8);
+    border: 1px solid rgba(34, 34, 34, 0.5);
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
 }
 
@@ -258,7 +262,8 @@ body.light .range-slider::before {
 
 body.light .range-slider .range-input::-webkit-slider-thumb,
 body.light .range-slider .range-input::-moz-range-thumb {
-    border-color: rgba(255, 255, 255, 0.9);
+    background: rgba(34, 34, 34, 0.9);
+    border-color: rgba(255, 255, 255, 0.7);
 }
 
 .theme-icons {
