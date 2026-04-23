@@ -66,6 +66,12 @@ Outputs:
 - `data/road_trips.json` — road trips with cached driving geometry, place names, distance, dates.
 - `visitedStates.json` — auto-derived from places via point-in-polygon against `us-states.json`.
 
+**Tuning visited states**: a state counts as "visited" if you have at least `STATE_MIN_PLACES` distinct places inside it (near-duplicate coordinates within ~110 m are deduped first). The default is `2` in `backend/data_generator.py`, which filters out one-off pings (e.g. a single airport check-in during a layover). Set to `1` to count every state with any recorded visit, or bump higher (`5`, `10`) to only show states where you actually spent meaningful time:
+
+```python
+STATE_MIN_PLACES = 2  # backend/data_generator.py
+```
+
 ### Step IV: Configure (optional)
 
 `config.json` controls map center, zoom, layer colors, and the Stadia Maps API key. Colors/radius/opacity for each layer are all driven from there. The bundled Stadia key is domain-restricted — create your own at [Stadia Maps](https://client.stadiamaps.com/dashboard/) and replace `stadiaApiKey`.
