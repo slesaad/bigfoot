@@ -1,9 +1,9 @@
 {
     "mapConfig": {
         "center": [34.82, -94.58],
-        "zoom": 5,
+        "zoom": 1.75,
         "maxZoom": 10,
-        "minZoom": 3
+        "minZoom": 0
     },
     "vizConfig": {
         "points": {
