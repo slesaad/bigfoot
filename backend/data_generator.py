@@ -243,6 +243,24 @@ def generate_old_format(folder, years):
     return places, flights, road_trips
 
 
+def _read_env_file(path):
+    """Minimal .env parser: KEY=VALUE per line, # comments, optional quotes."""
+    if not os.path.isfile(path):
+        return {}
+    out = {}
+    with open(path) as f:
+        for line in f:
+            line = line.strip()
+            if not line or line.startswith("#") or "=" not in line:
+                continue
+            key, _, value = line.partition("=")
+            key = key.strip()
+            value = value.strip().strip('"').strip("'")
+            if key:
+                out[key] = value
+    return out
+
+
 def _simplify_waypoints(pts, max_n=MAPBOX_MAX_WAYPOINTS):
     """Evenly-spaced sample that always keeps first and last."""
     if len(pts) <= max_n:
@@ -370,12 +388,16 @@ if __name__ == "__main__":
 
     print(f"places={len(places)} flights={len(flights)} road_trips={len(road_trips)}")
 
-    mapbox_token = os.environ.get("MAPBOX_TOKEN")
+    env_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), ".env")
+    mapbox_token = os.environ.get("MAPBOX_TOKEN") or _read_env_file(env_path).get(
+        "MAPBOX_TOKEN"
+    )
     if not mapbox_token:
         raise SystemExit(
-            "MAPBOX_TOKEN env var is required (create an unrestricted public "
-            "token at https://account.mapbox.com/access-tokens/ and run with "
-            "MAPBOX_TOKEN=pk.xxx python3 data_generator.py)."
+            "MAPBOX_TOKEN is required. Create an unrestricted public token at "
+            "https://account.mapbox.com/access-tokens/ and either export it "
+            "(MAPBOX_TOKEN=pk.xxx python3 data_generator.py) or add it to "
+            "backend/.env."
         )
     print("Resolving road trip geometries via Mapbox Directions...")
     resolve_route_geometries(
