@@ -51,13 +51,22 @@ Promise.all([
   const routesColor = hexToRgba(vizConfig.routes.styles[0].color, vizConfig.routes.styles[0].opacity);
   const flightsColor = hexToRgba(vizConfig.flights.color, 1);
 
-  const layers = [
+  const visibility = {
+    'states': true,
+    'road-trips': true,
+    'flights': true,
+    'places': true,
+  };
+
+  // Layers are immutable in deck.gl — rebuild on each toggle and setProps.
+  const buildLayers = () => [
     new deck.GeoJsonLayer({
       id: 'states',
       data: { type: 'FeatureCollection', features: visitedFeatures },
       stroked: false,
       filled: true,
       getFillColor: statesColor,
+      visible: visibility['states'],
     }),
     new deck.PathLayer({
       id: 'road-trips',
@@ -70,6 +79,7 @@ Promise.all([
       getWidth: vizConfig.routes.styles[0].weight,
       widthUnits: 'pixels',
       pickable: true,
+      visible: visibility['road-trips'],
     }),
     new deck.ArcLayer({
       id: 'flights',
@@ -85,6 +95,7 @@ Promise.all([
       getHeight: 0.3,
       greatCircle: true,
       pickable: true,
+      visible: visibility['flights'],
     }),
     new deck.ScatterplotLayer({
       id: 'places',
@@ -94,6 +105,7 @@ Promise.all([
       radiusUnits: 'pixels',
       stroked: false,
       getFillColor: placesColor,
+      visible: visibility['places'],
     }),
   ];
 
@@ -139,22 +151,33 @@ Promise.all([
     return null;
   };
 
+  let overlay;
   map.on('load', () => {
-    const overlay = new deck.MapboxOverlay({ layers, getTooltip });
+    overlay = new deck.MapboxOverlay({ layers: buildLayers(), getTooltip });
     map.addControl(overlay);
   });
 
-  // Legend
+  // Legend — click a row to toggle that layer.
   const legend = document.createElement('div');
   legend.className = 'legend';
-  const swatch = color =>
-    `<i style="background: ${color}"></i>`;
+  const row = (layerId, color, label) =>
+    `<label data-layer="${layerId}">
+      <i style="background: ${color}"></i><span>${label}</span>
+    </label>`;
   legend.innerHTML = `
     <h4>Legend</h4>
-    ${swatch(vizConfig.points.fillColor)}<span>Places visited</span><br>
-    ${swatch(vizConfig.routes.styles[0].color)}<span>Road trips</span><br>
-    ${swatch(vizConfig.flights.color)}<span>Flights</span><br>
-    ${swatch(vizConfig.states.style.color)}<span>States visited</span><br>
+    ${row('places', vizConfig.points.fillColor, 'Places visited')}
+    ${row('road-trips', vizConfig.routes.styles[0].color, 'Road trips')}
+    ${row('flights', vizConfig.flights.color, 'Flights')}
+    ${row('states', vizConfig.states.style.color, 'States visited')}
   `;
+  legend.addEventListener('click', (e) => {
+    const label = e.target.closest('label[data-layer]');
+    if (!label) return;
+    const layerId = label.dataset.layer;
+    visibility[layerId] = !visibility[layerId];
+    label.classList.toggle('off', !visibility[layerId]);
+    if (overlay) overlay.setProps({ layers: buildLayers() });
+  });
   document.body.appendChild(legend);
 }).catch(err => console.error(err));
