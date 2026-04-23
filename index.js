@@ -106,7 +106,12 @@ Promise.all([
       id: 'places',
       data: places,
       getPosition: f => f.geometry.coordinates,
-      getRadius: vizConfig.points.radius,
+      // Radius scales with visit count (sqrt = area linear in count), capped
+      // so a 1000-visit home doesn't swallow the map.
+      getRadius: f => {
+        const count = f.properties?.count || 1;
+        return vizConfig.points.radius * Math.min(4, Math.sqrt(count));
+      },
       radiusUnits: 'pixels',
       stroked: false,
       getFillColor: placesColor,

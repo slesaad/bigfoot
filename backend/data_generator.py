@@ -121,7 +121,10 @@ def _find_path_between(paths, start_time, end_time):
 
 def generate_new_format(data):
     """Process on-device (2024+) Timeline.json into places/flights/road_trips."""
-    places = []
+    # Aggregate visits by placeId (fallback: rounded coords). Each unique place
+    # gets a `count` equal to the number of visits, which the frontend scales
+    # the dot radius by.
+    places_by_key = {}
     flights = []
     road_trips = []
 
@@ -143,17 +146,16 @@ def generate_new_format(data):
 
     for seg in data['semanticSegments']:
         if visit := seg.get('visit'):
-            loc = visit.get('topCandidate', {}).get('placeLocation', {})
+            top = visit.get('topCandidate', {})
+            loc = top.get('placeLocation', {})
             ll = _parse_latlng(loc.get('latLng'))
             if ll:
                 lat, lng = ll
-                places.append({
-                    "type": "Feature",
-                    "geometry": {
-                        "type": "Point",
-                        "coordinates": [lng, lat],
-                    },
-                })
+                key = top.get('placeId') or (round(lat, 4), round(lng, 4))
+                if key in places_by_key:
+                    places_by_key[key]['count'] += 1
+                else:
+                    places_by_key[key] = {'lat': lat, 'lng': lng, 'count': 1}
             continue
 
         if activity := seg.get('activity'):
@@ -204,6 +206,14 @@ def generate_new_format(data):
                     },
                 })
 
+    places = [
+        {
+            "type": "Feature",
+            "geometry": {"type": "Point", "coordinates": [p['lng'], p['lat']]},
+            "properties": {"count": p['count']},
+        }
+        for p in places_by_key.values()
+    ]
     return places, flights, road_trips
 
 

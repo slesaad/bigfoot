@@ -7,7 +7,7 @@
     },
     "vizConfig": {
         "points": {
-            "radius": 8,
+            "radius": 5,
             "weight": 1,
             "stroke": false,
             "fillColor": "#f1c40f",
