@@ -129,6 +129,35 @@ Promise.all([
     Object.keys(visibility).forEach(k => { visibility[k] = requested.has(k); });
   }
 
+  // ?flight=YYYY-MM-DD / ?trip=YYYY-MM-DD — prefix match on startTime. Matched
+  // items render bright; unmatched ones dim. Map auto-fits to the matches on
+  // load (unless ?view= overrides). Shareable deep-links for a specific trip.
+  // Ranges use `a..b` (e.g. `?flight=2023-08..2023-10`).
+  const highlightFlight = params.get('flight');
+  const highlightTrip = params.get('trip');
+  const dateMatches = (startTime, spec) => {
+    if (!spec || !startTime) return false;
+    if (spec.includes('..')) {
+      const [a, b] = spec.split('..');
+      if (!a || !b) return false;
+      // Compare at the coarser endpoint's resolution so YYYY, YYYY-MM,
+      // YYYY-MM-DD all compare sanely (ISO dates are lexicographic).
+      const len = Math.min(a.length, b.length);
+      const prefix = startTime.slice(0, len);
+      return prefix >= a.slice(0, len) && prefix <= b.slice(0, len);
+    }
+    return startTime.startsWith(spec);
+  };
+  const isHlFlight = (f) => dateMatches(f.startTime, highlightFlight);
+  const isHlTrip = (t) => dateMatches(t.startTime, highlightTrip);
+  const anyHighlight = Boolean(highlightFlight || highlightTrip);
+  // Warm gold glow — two halo colors layered around a hot white core.
+  const GLOW_OUTER = [255, 210, 90, 45];
+  const GLOW_INNER = [255, 230, 150, 110];
+  const HIGHLIGHT_RGB = [255, 250, 220];
+  const DIM_ALPHA = 40;
+  const dim = (rgbaOrRgb) => [rgbaOrRgb[0], rgbaOrRgb[1], rgbaOrRgb[2], DIM_ALPHA];
+
   // Year filter — two-thumb range. Trips/flights with startTime outside the
   // range are hidden. Places/states lack times, so they stay unfiltered.
   const allStartYears = [...roadTrips, ...flights]
@@ -146,7 +175,23 @@ Promise.all([
   };
 
   // Layers are immutable in deck.gl — rebuild on each toggle and setProps.
-  const buildLayers = () => [
+  const tripPath = t =>
+    t.geometry && t.geometry.length >= 2
+      ? t.geometry
+      : t.waypointPath.waypoints.map(w => fromE7(w.latE7, w.lngE7));
+  const flightSrc = f => fromE7(f.startLocation.latitudeE7, f.startLocation.longitudeE7);
+  const flightTgt = f => fromE7(f.endLocation.latitudeE7, f.endLocation.longitudeE7);
+  const tripWeight = vizConfig.routes.styles[0].weight;
+  const flightWeight = vizConfig.flights.weight;
+
+  const buildLayers = () => {
+    const hlTrips = anyHighlight
+      ? roadTrips.filter(t => isHlTrip(t) && withinYear(t))
+      : [];
+    const hlFlights = anyHighlight
+      ? flights.filter(f => isHlFlight(f) && withinYear(f))
+      : [];
+    return [
     new deck.GeoJsonLayer({
       id: 'states',
       data: { type: 'FeatureCollection', features: visitedFeatures },
@@ -155,29 +200,86 @@ Promise.all([
       getFillColor: statesColor,
       visible: visibility['states'],
     }),
+    // Glow halos behind road trips (wide translucent → narrower semi).
+    ...(hlTrips.length && visibility['road-trips'] ? [
+      new deck.PathLayer({
+        id: 'road-trips-glow-outer',
+        data: hlTrips,
+        getPath: tripPath,
+        getColor: GLOW_OUTER,
+        getWidth: tripWeight * 9,
+        widthUnits: 'pixels',
+        pickable: false,
+      }),
+      new deck.PathLayer({
+        id: 'road-trips-glow-inner',
+        data: hlTrips,
+        getPath: tripPath,
+        getColor: GLOW_INNER,
+        getWidth: tripWeight * 4.5,
+        widthUnits: 'pixels',
+        pickable: false,
+      }),
+    ] : []),
     new deck.PathLayer({
       id: 'road-trips',
       data: roadTrips.filter(withinYear),
-      getPath: t =>
-        t.geometry && t.geometry.length >= 2
-          ? t.geometry
-          : t.waypointPath.waypoints.map(w => fromE7(w.latE7, w.lngE7)),
-      getColor: routesColor,
-      getWidth: vizConfig.routes.styles[0].weight,
+      getPath: tripPath,
+      getColor: t => {
+        if (!anyHighlight) return routesColor;
+        if (isHlTrip(t)) return [...HIGHLIGHT_RGB, 255];
+        return dim(routesColor);
+      },
+      getWidth: t => isHlTrip(t) ? tripWeight * 2 : tripWeight,
       widthUnits: 'pixels',
       pickable: true,
       visible: visibility['road-trips'],
     }),
+    // Glow halos behind flights.
+    ...(hlFlights.length && visibility['flights'] ? [
+      new deck.ArcLayer({
+        id: 'flights-glow-outer',
+        data: hlFlights,
+        getSourcePosition: flightSrc,
+        getTargetPosition: flightTgt,
+        getSourceColor: GLOW_OUTER,
+        getTargetColor: GLOW_OUTER,
+        getWidth: flightWeight * 9,
+        widthUnits: 'pixels',
+        getHeight: 0.3,
+        greatCircle: true,
+        pickable: false,
+      }),
+      new deck.ArcLayer({
+        id: 'flights-glow-inner',
+        data: hlFlights,
+        getSourcePosition: flightSrc,
+        getTargetPosition: flightTgt,
+        getSourceColor: GLOW_INNER,
+        getTargetColor: GLOW_INNER,
+        getWidth: flightWeight * 4.5,
+        widthUnits: 'pixels',
+        getHeight: 0.3,
+        greatCircle: true,
+        pickable: false,
+      }),
+    ] : []),
     new deck.ArcLayer({
       id: 'flights',
       data: flights.filter(withinYear),
-      getSourcePosition: f =>
-        fromE7(f.startLocation.latitudeE7, f.startLocation.longitudeE7),
-      getTargetPosition: f =>
-        fromE7(f.endLocation.latitudeE7, f.endLocation.longitudeE7),
-      getSourceColor: flightColorFor,
-      getTargetColor: flightColorFor,
-      getWidth: vizConfig.flights.weight,
+      getSourcePosition: flightSrc,
+      getTargetPosition: flightTgt,
+      getSourceColor: f => {
+        if (!anyHighlight) return flightColorFor(f);
+        if (isHlFlight(f)) return [...HIGHLIGHT_RGB, 255];
+        return dim(flightColorFor(f));
+      },
+      getTargetColor: f => {
+        if (!anyHighlight) return flightColorFor(f);
+        if (isHlFlight(f)) return [...HIGHLIGHT_RGB, 255];
+        return dim(flightColorFor(f));
+      },
+      getWidth: f => isHlFlight(f) ? flightWeight * 2 : flightWeight,
       widthUnits: 'pixels',
       getHeight: 0.3,
       greatCircle: true,
@@ -199,7 +301,8 @@ Promise.all([
       getFillColor: placesColor,
       visible: visibility['places'],
     }),
-  ];
+    ];
+  };
 
   const formatDate = (iso) => {
     if (!iso) return '';
@@ -256,6 +359,28 @@ Promise.all([
   map.on('load', () => {
     overlay = new deck.MapboxOverlay({ layers: buildLayers(), getTooltip });
     map.addControl(overlay);
+
+    // Auto-fit to a highlighted trip/flight (unless ?view= is explicit).
+    if (anyHighlight && !viewParam) {
+      const matches = [
+        ...roadTrips.filter(isHlTrip),
+        ...flights.filter(isHlFlight),
+      ];
+      const coords = matches.flatMap(m => [
+        fromE7(m.startLocation.latitudeE7, m.startLocation.longitudeE7),
+        fromE7(m.endLocation.latitudeE7, m.endLocation.longitudeE7),
+      ]);
+      if (coords.length) {
+        const lngs = coords.map(c => c[0]);
+        const lats = coords.map(c => c[1]);
+        map.fitBounds(
+          [[Math.min(...lngs), Math.min(...lats)], [Math.max(...lngs), Math.max(...lats)]],
+          { padding: 80, duration: 3000, essential: true },
+        );
+        return;
+      }
+    }
+
     map.flyTo({
       center: [initialView.center[1], initialView.center[0]],
       zoom: initialView.zoom,
