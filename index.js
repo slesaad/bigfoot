@@ -49,6 +49,18 @@ Promise.all([
 ]).then(([config, visited, allStates, roadTrips, flights, places]) => {
   const { mapConfig, vizConfig, stadiaApiKey } = config;
 
+  // ?view=lat,lng,zoom overrides mapConfig's center/zoom. Also used as the
+  // flyTo destination so deep-linked shares land exactly where intended.
+  const params = new URLSearchParams(window.location.search);
+  const viewParam = params.get('view');
+  let initialView = { center: mapConfig.center, zoom: mapConfig.zoom };
+  if (viewParam) {
+    const parts = viewParam.split(',').map(Number);
+    if (parts.length === 3 && parts.every(n => Number.isFinite(n))) {
+      initialView = { center: [parts[0], parts[1]], zoom: parts[2] };
+    }
+  }
+
   const STADIA_STYLES = { dark: 'alidade_smooth_dark', light: 'alidade_smooth' };
   const styleUrl = (theme) =>
     `https://tiles.stadiamaps.com/styles/${STADIA_STYLES[theme]}.json?api_key=${stadiaApiKey}`;
@@ -57,7 +69,7 @@ Promise.all([
   const map = new maplibregl.Map({
     container: mapId,
     style: styleUrl(theme),
-    center: [mapConfig.center[1], mapConfig.center[0]], // MapLibre is [lng, lat]
+    center: [initialView.center[1], initialView.center[0]], // MapLibre is [lng, lat]
     zoom: 0, // world view on load; flyTo animates to configured zoom
     maxZoom: mapConfig.maxZoom,
     minZoom: mapConfig.minZoom,
@@ -108,6 +120,14 @@ Promise.all([
     'flights': true,
     'places': true,
   };
+  // ?layers=a,b,c — if present, only those layers are visible initially.
+  const layersParam = params.get('layers');
+  if (layersParam) {
+    const requested = new Set(
+      layersParam.split(',').map(s => s.trim()).filter(Boolean),
+    );
+    Object.keys(visibility).forEach(k => { visibility[k] = requested.has(k); });
+  }
 
   // Year filter — two-thumb range. Trips/flights with startTime outside the
   // range are hidden. Places/states lack times, so they stay unfiltered.
@@ -237,8 +257,8 @@ Promise.all([
     overlay = new deck.MapboxOverlay({ layers: buildLayers(), getTooltip });
     map.addControl(overlay);
     map.flyTo({
-      center: [mapConfig.center[1], mapConfig.center[0]],
-      zoom: mapConfig.zoom,
+      center: [initialView.center[1], initialView.center[0]],
+      zoom: initialView.zoom,
       duration: 3000,
       curve: 1.6,
       essential: true,
@@ -272,6 +292,10 @@ Promise.all([
     visibility[layerId] = !visibility[layerId];
     label.classList.toggle('off', !visibility[layerId]);
     if (overlay) overlay.setProps({ layers: buildLayers() });
+  });
+  // Reflect param-driven initial visibility in the legend.
+  legend.querySelectorAll('label[data-layer]').forEach(label => {
+    label.classList.toggle('off', !visibility[label.dataset.layer]);
   });
   document.body.appendChild(legend);
 
@@ -344,6 +368,39 @@ Promise.all([
     toInput.addEventListener('input', onInput);
     syncFill();
     document.body.appendChild(yearEl);
+
+    // ?animate=1 (or ms/year) — cumulative year sweep: fromYear anchored at
+    // minYear, toYear ticks from minYear to maxYear, pauses, loops.
+    const animateParam = params.get('animate');
+    if (animateParam) {
+      const parsed = parseInt(animateParam, 10);
+      const tickMs = Number.isFinite(parsed) && parsed > 100 ? parsed : 1200;
+      let cursor = minYear;
+      let animationTimer = null;
+      fromInput.value = minYear;
+      toInput.value = minYear;
+      onInput();
+      const step = () => {
+        cursor += 1;
+        if (cursor > maxYear) {
+          cursor = minYear - 1; // the next step() will bump it to minYear
+          animationTimer = setTimeout(step, tickMs * 2); // pause at end
+          return;
+        }
+        toInput.value = cursor;
+        onInput();
+        animationTimer = setTimeout(step, tickMs);
+      };
+      animationTimer = setTimeout(step, tickMs);
+      const stop = () => {
+        if (animationTimer) {
+          clearTimeout(animationTimer);
+          animationTimer = null;
+        }
+      };
+      fromInput.addEventListener('pointerdown', stop);
+      toInput.addEventListener('pointerdown', stop);
+    }
   }
 
   // Theme toggle — sun/moon icons in the header; active one is highlighted.
