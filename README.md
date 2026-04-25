@@ -132,6 +132,9 @@ bf.postMessage({ type: 'bigfoot:setYearRange', from: 2019, to: 2020 }, '*');
 // or `a..b` range; pass null to clear)
 bf.postMessage({ type: 'bigfoot:setHighlight', flight: '2023-08', trip: null }, '*');
 
+// Switch basemap to dark or light (same as clicking the sun/moon icon).
+bf.postMessage({ type: 'bigfoot:setTheme', theme: 'light' }, '*');
+
 // Animate the year slider. All options are optional:
 //   tickMs  — ms per year (default 1200)
 //   from/to — restrict the sweep to a sub-range (defaults to the full range)

@@ -531,8 +531,9 @@ Promise.all([
     themeBtn.title = `${target[0].toUpperCase() + target.slice(1)} mode`;
     themeBtn.setAttribute('aria-label', themeBtn.title);
   };
-  themeBtn.addEventListener('click', () => {
-    theme = theme === 'dark' ? 'light' : 'dark';
+  const applyTheme = (next) => {
+    if ((next !== 'dark' && next !== 'light') || next === theme) return;
+    theme = next;
     document.body.classList.toggle('light', theme === 'light');
     renderThemeBtn();
     map.setStyle(styleUrl(theme));
@@ -541,6 +542,9 @@ Promise.all([
       firstSymbolId = findFirstSymbolId();
       if (overlay) overlay.setProps({ layers: buildLayers() });
     });
+  };
+  themeBtn.addEventListener('click', () => {
+    applyTheme(theme === 'dark' ? 'light' : 'dark');
   });
   renderThemeBtn();
   document.querySelector('.header').appendChild(themeBtn);
@@ -584,6 +588,7 @@ Promise.all([
       highlightTrip = trip || null;
       if (overlay) overlay.setProps({ layers: buildLayers() });
     },
+    setTheme(next) { applyTheme(next); },
     animateYears,
     stopAnimation,
     reset() {
@@ -612,6 +617,7 @@ Promise.all([
       case 'setView': api.setView(d); break;
       case 'setYearRange': api.setYearRange(d.from, d.to); break;
       case 'setHighlight': api.setHighlight(d); break;
+      case 'setTheme': api.setTheme(d.theme); break;
       case 'animateYears': api.animateYears(d); break;
       case 'stopAnimation': api.stopAnimation(); break;
       case 'reset': api.reset(); break;
