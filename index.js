@@ -190,12 +190,6 @@ Promise.all([
 
   const buildLayers = () => {
     const hl = anyHighlight();
-    const hlTrips = hl
-      ? roadTrips.filter(t => isHlTrip(t) && withinYear(t))
-      : [];
-    const hlFlights = hl
-      ? flights.filter(f => isHlFlight(f) && withinYear(f))
-      : [];
     return [
     new deck.GeoJsonLayer({
       id: 'states',
@@ -385,21 +379,16 @@ Promise.all([
   document.body.appendChild(legend);
 
   // Stats overlay in the header — recomputed from the filtered trip/flight set.
-  const fmtKm = (m) => `${Math.round(m / 1000).toLocaleString()} km`;
   const stats = document.createElement('div');
   stats.className = 'stats';
   document.querySelector('.header').appendChild(stats);
   const renderStats = () => {
     const trips = roadTrips.filter(withinYear);
     const flts = flights.filter(withinYear);
-    const driven = trips.reduce((s, t) => s + (t.distance || 0), 0);
-    const flown = flts.reduce((s, f) => s + (f.distance || 0), 0);
     const items = [
       { text: `${visited.length} states` },
       { text: `${trips.length} road trips` },
       { text: `${flts.length} flights` },
-      { text: `${fmtKm(driven)} driven`, cls: 'km' },
-      { text: `${fmtKm(flown)} flown`, cls: 'km' },
     ];
     if (fromYear !== null) {
       // "since 2015" implies "through now"; switch to "2015—2020" when the
