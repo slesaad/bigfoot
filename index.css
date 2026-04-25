@@ -31,6 +31,7 @@ body {
 
 #mapid {
     height: 100vh;
+    height: 100dvh; /* iOS Safari: account for dynamic browser chrome */
     width: 100%;
 }
 
@@ -44,7 +45,7 @@ body {
     position: absolute;
     bottom: 20px;
     left: 20px;
-    z-index: 1;
+    z-index: 10;
     padding: 12px 14px;
     font-family: "Lato", sans-serif;
     font-size: 11px;
@@ -71,7 +72,8 @@ body {
     display: flex;
     align-items: center;
     gap: 10px;
-    padding: 4px 0;
+    padding: 6px 0;
+    min-height: 32px;
     cursor: pointer;
     user-select: none;
     text-transform: uppercase;
@@ -147,7 +149,7 @@ body {
     top: 62px;
     left: 50%;
     transform: translateX(-50%);
-    z-index: 1;
+    z-index: 10;
     padding: 8px 14px;
     display: flex;
     align-items: center;
@@ -204,6 +206,8 @@ body {
     /* Clip to the [from, to] slice so the visible gradient slice aligns with
        the year position on the full track, matching the flight palette. */
     clip-path: inset(0 calc(100% - var(--to, 100%)) 0 var(--from, 0%));
+    /* Local stacking: above the grey track (::before, z-auto), below the
+       input thumbs. */
     z-index: 1;
 }
 
@@ -305,4 +309,64 @@ body.light .legend {
 
 body.light .legend h4 {
     border-bottom-color: rgba(34, 34, 34, 0.15);
+}
+
+/* Coarse pointers (touchscreens): bigger slider thumbs + theme button. */
+@media (pointer: coarse) {
+    .range-slider {
+        height: 32px;
+    }
+    .range-slider .range-input {
+        height: 32px;
+    }
+    .range-slider .range-input::-webkit-slider-thumb {
+        width: 22px;
+        height: 22px;
+    }
+    .range-slider .range-input::-moz-range-thumb {
+        width: 22px;
+        height: 22px;
+    }
+    .theme-icons {
+        padding: 10px;
+    }
+}
+
+/* Narrow screens (phones) — compress chrome so nothing overflows. */
+@media (max-width: 480px) {
+    .header {
+        height: 44px;
+    }
+    .logo {
+        height: 32px;
+    }
+    .legend {
+        bottom: 12px;
+        left: 12px;
+        padding: 10px 12px;
+        min-width: 0;
+        font-size: 10px;
+    }
+    .year-filter {
+        top: 54px;
+        padding: 6px 10px;
+        gap: 10px;
+        font-size: 10px;
+    }
+    .range-slider {
+        width: 140px;
+    }
+    .theme-icons {
+        right: 10px;
+    }
+}
+
+/* Very narrow (small phones, < 360px) — shrink slider further. */
+@media (max-width: 360px) {
+    .range-slider {
+        width: 110px;
+    }
+    .year-filter {
+        gap: 8px;
+    }
 }
