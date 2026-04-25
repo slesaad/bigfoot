@@ -185,6 +185,10 @@ Promise.all([
   const flightTgt = f => fromE7(f.endLocation.latitudeE7, f.endLocation.longitudeE7);
   const tripWeight = vizConfig.routes.styles[0].weight;
   const flightWeight = vizConfig.flights.weight;
+  // ID of the first MapLibre symbol layer; used as `beforeId` so deck.gl
+  // layers slot below labels (city/road names render on top of the viz).
+  // Recomputed on style change because dark/light styles can differ.
+  let firstSymbolId = null;
 
   const buildLayers = () => {
     const hl = anyHighlight();
@@ -202,6 +206,7 @@ Promise.all([
       filled: true,
       getFillColor: statesColor,
       visible: visibility['states'],
+      beforeId: firstSymbolId,
     }),
     // Glow halos behind road trips (wide translucent → narrower semi).
     ...(hlTrips.length && visibility['road-trips'] ? [
@@ -213,6 +218,7 @@ Promise.all([
         getWidth: tripWeight * 9,
         widthUnits: 'pixels',
         pickable: false,
+        beforeId: firstSymbolId,
       }),
       new deck.PathLayer({
         id: 'road-trips-glow-inner',
@@ -222,6 +228,7 @@ Promise.all([
         getWidth: tripWeight * 4.5,
         widthUnits: 'pixels',
         pickable: false,
+        beforeId: firstSymbolId,
       }),
     ] : []),
     new deck.PathLayer({
@@ -237,6 +244,7 @@ Promise.all([
       widthUnits: 'pixels',
       pickable: true,
       visible: visibility['road-trips'],
+      beforeId: firstSymbolId,
     }),
     // Glow halos behind flights.
     ...(hlFlights.length && visibility['flights'] ? [
@@ -252,6 +260,7 @@ Promise.all([
         getHeight: 0.3,
         greatCircle: true,
         pickable: false,
+        beforeId: firstSymbolId,
       }),
       new deck.ArcLayer({
         id: 'flights-glow-inner',
@@ -265,6 +274,7 @@ Promise.all([
         getHeight: 0.3,
         greatCircle: true,
         pickable: false,
+        beforeId: firstSymbolId,
       }),
     ] : []),
     new deck.ArcLayer({
@@ -288,6 +298,7 @@ Promise.all([
       greatCircle: true,
       pickable: true,
       visible: visibility['flights'],
+      beforeId: firstSymbolId,
     }),
     new deck.ScatterplotLayer({
       id: 'places',
@@ -303,6 +314,7 @@ Promise.all([
       stroked: false,
       getFillColor: placesColor,
       visible: visibility['places'],
+      beforeId: firstSymbolId,
     }),
     ];
   };
@@ -358,9 +370,22 @@ Promise.all([
     return null;
   };
 
+  // Pick the first MapLibre symbol layer (text labels render as symbols);
+  // deck.gl layers slot before it so labels stay readable on top of the viz.
+  const findFirstSymbolId = () => {
+    const layers = (map.getStyle() && map.getStyle().layers) || [];
+    const sym = layers.find(l => l.type === 'symbol');
+    return sym ? sym.id : null;
+  };
+
   let overlay;
   map.on('load', () => {
-    overlay = new deck.MapboxOverlay({ layers: buildLayers(), getTooltip });
+    firstSymbolId = findFirstSymbolId();
+    overlay = new deck.MapboxOverlay({
+      interleaved: true,
+      layers: buildLayers(),
+      getTooltip,
+    });
     map.addControl(overlay);
 
     // Auto-fit to a highlighted trip/flight (unless ?view= is explicit).
@@ -590,6 +615,11 @@ Promise.all([
     document.body.classList.toggle('light', theme === 'light');
     renderThemeBtn();
     map.setStyle(styleUrl(theme));
+    // After the new style finishes loading, label layer IDs may differ.
+    map.once('styledata', () => {
+      firstSymbolId = findFirstSymbolId();
+      if (overlay) overlay.setProps({ layers: buildLayers() });
+    });
   });
   renderThemeBtn();
   document.querySelector('.header').appendChild(themeBtn);
