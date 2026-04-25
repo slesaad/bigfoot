@@ -398,8 +398,8 @@ Promise.all([
       { text: `${visited.length} states` },
       { text: `${trips.length} road trips` },
       { text: `${flts.length} flights` },
-      { text: `${fmtKm(driven)} driven` },
-      { text: `${fmtKm(flown)} flown` },
+      { text: `${fmtKm(driven)} driven`, cls: 'km' },
+      { text: `${fmtKm(flown)} flown`, cls: 'km' },
     ];
     if (fromYear !== null) {
       // "since 2015" implies "through now"; switch to "2015—2020" when the

@@ -140,6 +140,11 @@ body {
     opacity: 0.5;
 }
 
+/* Tablet-ish widths: hide the km stats so the line doesn't crowd the logo. */
+@media (max-width: 1024px) {
+    .stats .km { display: none; }
+}
+
 @media (max-width: 700px) {
     .stats { display: none; }
 }
