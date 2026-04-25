@@ -133,8 +133,9 @@ Promise.all([
   // items render bright; unmatched ones dim. Map auto-fits to the matches on
   // load (unless ?view= overrides). Shareable deep-links for a specific trip.
   // Ranges use `a..b` (e.g. `?flight=2023-08..2023-10`).
-  const highlightFlight = params.get('flight');
-  const highlightTrip = params.get('trip');
+  // `let` so postMessage handlers can update highlight dynamically.
+  let highlightFlight = params.get('flight');
+  let highlightTrip = params.get('trip');
   const dateMatches = (startTime, spec) => {
     if (!spec || !startTime) return false;
     if (spec.includes('..')) {
@@ -150,7 +151,8 @@ Promise.all([
   };
   const isHlFlight = (f) => dateMatches(f.startTime, highlightFlight);
   const isHlTrip = (t) => dateMatches(t.startTime, highlightTrip);
-  const anyHighlight = Boolean(highlightFlight || highlightTrip);
+  // Fn so updates to highlightFlight/highlightTrip are picked up live.
+  const anyHighlight = () => Boolean(highlightFlight || highlightTrip);
   // Warm gold glow — two halo colors layered around a hot white core.
   const GLOW_OUTER = [255, 210, 90, 45];
   const GLOW_INNER = [255, 230, 150, 110];
@@ -185,10 +187,11 @@ Promise.all([
   const flightWeight = vizConfig.flights.weight;
 
   const buildLayers = () => {
-    const hlTrips = anyHighlight
+    const hl = anyHighlight();
+    const hlTrips = hl
       ? roadTrips.filter(t => isHlTrip(t) && withinYear(t))
       : [];
-    const hlFlights = anyHighlight
+    const hlFlights = hl
       ? flights.filter(f => isHlFlight(f) && withinYear(f))
       : [];
     return [
@@ -226,7 +229,7 @@ Promise.all([
       data: roadTrips.filter(withinYear),
       getPath: tripPath,
       getColor: t => {
-        if (!anyHighlight) return routesColor;
+        if (!hl) return routesColor;
         if (isHlTrip(t)) return [...HIGHLIGHT_RGB, 255];
         return dim(routesColor);
       },
@@ -270,12 +273,12 @@ Promise.all([
       getSourcePosition: flightSrc,
       getTargetPosition: flightTgt,
       getSourceColor: f => {
-        if (!anyHighlight) return flightColorFor(f);
+        if (!hl) return flightColorFor(f);
         if (isHlFlight(f)) return [...HIGHLIGHT_RGB, 255];
         return dim(flightColorFor(f));
       },
       getTargetColor: f => {
-        if (!anyHighlight) return flightColorFor(f);
+        if (!hl) return flightColorFor(f);
         if (isHlFlight(f)) return [...HIGHLIGHT_RGB, 255];
         return dim(flightColorFor(f));
       },
@@ -361,7 +364,7 @@ Promise.all([
     map.addControl(overlay);
 
     // Auto-fit to a highlighted trip/flight (unless ?view= is explicit).
-    if (anyHighlight && !viewParam) {
+    if (anyHighlight() && !viewParam) {
       const matches = [
         ...roadTrips.filter(isHlTrip),
         ...flights.filter(isHlFlight),
@@ -456,6 +459,69 @@ Promise.all([
   renderStats();
 
   // Year filter — dual-thumb range (two overlapping native sliders).
+  // Hoisted so the postMessage API can read/write them.
+  let fromInput = null, toInput = null, fromValueEl = null, toValueEl = null;
+  let syncFill = () => {};
+  const clamp = (n, lo, hi) => Math.max(lo, Math.min(hi, n));
+  const updateSliderUi = () => {
+    if (fromInput) fromInput.value = fromYear;
+    if (toInput) toInput.value = toYear;
+    if (fromValueEl) fromValueEl.textContent = fromYear;
+    if (toValueEl) toValueEl.textContent = toYear;
+    syncFill();
+  };
+
+  // Year animation — shared by ?animate= and bigfoot:animateYears.
+  const parentOrigins = new Set(
+    (params.get('parent') || '')
+      .split(',').map(s => s.trim()).filter(Boolean),
+  );
+  const postToParent = (msg) => {
+    if (!(window.parent && window.parent !== window)) return;
+    const target = parentOrigins.size === 1 ? [...parentOrigins][0] : '*';
+    window.parent.postMessage(msg, target);
+  };
+  let animationTimer = null;
+  const stopAnimation = () => {
+    if (animationTimer !== null) {
+      clearTimeout(animationTimer);
+      animationTimer = null;
+    }
+  };
+  const animateYears = ({ tickMs = 1200, from, to, loop = true } = {}) => {
+    stopAnimation();
+    if (minYear === null || minYear === maxYear) return;
+    const lo = Number.isFinite(Number(from))
+      ? clamp(Number(from), minYear, maxYear) : minYear;
+    const hi = Number.isFinite(Number(to))
+      ? clamp(Number(to), minYear, maxYear) : maxYear;
+    if (lo >= hi) return;
+    fromYear = lo;
+    toYear = lo;
+    updateSliderUi();
+    renderStats();
+    if (overlay) overlay.setProps({ layers: buildLayers() });
+    let cursor = lo;
+    const step = () => {
+      cursor += 1;
+      if (cursor > hi) {
+        if (loop) {
+          cursor = lo - 1; // next step() bumps to lo
+          animationTimer = setTimeout(step, tickMs * 2); // pause at end
+        } else {
+          animationTimer = null;
+          postToParent({ type: 'bigfoot:animationEnd' });
+        }
+        return;
+      }
+      toYear = cursor;
+      updateSliderUi();
+      renderStats();
+      if (overlay) overlay.setProps({ layers: buildLayers() });
+      animationTimer = setTimeout(step, tickMs);
+    };
+    animationTimer = setTimeout(step, tickMs);
+  };
   if (minYear !== null && minYear !== maxYear) {
     const yearEl = document.createElement('div');
     yearEl.className = 'year-filter';
@@ -469,13 +535,13 @@ Promise.all([
       </div>
       <span class="year-value year-to">${toYear}</span>
     `;
-    const fromInput = yearEl.querySelector('.range-from-input');
-    const toInput = yearEl.querySelector('.range-to-input');
-    const fromValueEl = yearEl.querySelector('.year-from');
-    const toValueEl = yearEl.querySelector('.year-to');
+    fromInput = yearEl.querySelector('.range-from-input');
+    toInput = yearEl.querySelector('.range-to-input');
+    fromValueEl = yearEl.querySelector('.year-from');
+    toValueEl = yearEl.querySelector('.year-to');
     const rangeSlider = yearEl.querySelector('.range-slider');
     const pct = (y) => ((y - minYear) / (maxYear - minYear)) * 100;
-    const syncFill = () => {
+    syncFill = () => {
       rangeSlider.style.setProperty('--from', `${pct(fromYear)}%`);
       rangeSlider.style.setProperty('--to', `${pct(toYear)}%`);
     };
@@ -491,40 +557,18 @@ Promise.all([
     };
     fromInput.addEventListener('input', onInput);
     toInput.addEventListener('input', onInput);
+    // Any slider interaction stops an in-flight animation.
+    fromInput.addEventListener('pointerdown', stopAnimation);
+    toInput.addEventListener('pointerdown', stopAnimation);
     syncFill();
     document.body.appendChild(yearEl);
 
-    // ?animate=1 (or ms/year) — cumulative year sweep: fromYear anchored at
-    // minYear, toYear ticks from minYear to maxYear, pauses, loops.
+    // ?animate=1 (or ms/year) — start the shared animation on load.
     const animateParam = params.get('animate');
     if (animateParam) {
       const parsed = parseInt(animateParam, 10);
       const tickMs = Number.isFinite(parsed) && parsed > 100 ? parsed : 1200;
-      let cursor = minYear;
-      let animationTimer = null;
-      fromInput.value = minYear;
-      toInput.value = minYear;
-      onInput();
-      const step = () => {
-        cursor += 1;
-        if (cursor > maxYear) {
-          cursor = minYear - 1; // the next step() will bump it to minYear
-          animationTimer = setTimeout(step, tickMs * 2); // pause at end
-          return;
-        }
-        toInput.value = cursor;
-        onInput();
-        animationTimer = setTimeout(step, tickMs);
-      };
-      animationTimer = setTimeout(step, tickMs);
-      const stop = () => {
-        if (animationTimer) {
-          clearTimeout(animationTimer);
-          animationTimer = null;
-        }
-      };
-      fromInput.addEventListener('pointerdown', stop);
-      toInput.addEventListener('pointerdown', stop);
+      animateYears({ tickMs });
     }
   }
 
@@ -549,4 +593,79 @@ Promise.all([
   });
   renderThemeBtn();
   document.querySelector('.header').appendChild(themeBtn);
+
+  // postMessage API — blog posts can drive the iframe via window.postMessage.
+  // Only messages with `type` starting "bigfoot:" are handled, and (if
+  // ?parent=... is set) only when event.origin is in the allowlist.
+  const api = {
+    setLayers(partial) {
+      if (!partial) return;
+      Object.entries(partial).forEach(([k, v]) => {
+        if (k in visibility) visibility[k] = Boolean(v);
+      });
+      legend.querySelectorAll('label[data-layer]').forEach(label => {
+        label.classList.toggle('off', !visibility[label.dataset.layer]);
+      });
+      if (overlay) overlay.setProps({ layers: buildLayers() });
+    },
+    setView({ center, zoom, duration } = {}) {
+      const opts = { essential: true, curve: 1.6, duration: duration ?? 2000 };
+      if (Array.isArray(center) && center.length === 2) opts.center = center; // [lng, lat]
+      if (Number.isFinite(zoom)) opts.zoom = zoom;
+      map.flyTo(opts);
+    },
+    setYearRange(fromArg, toArg) {
+      if (minYear === null) return;
+      stopAnimation();
+      if (fromArg != null && Number.isFinite(Number(fromArg))) {
+        fromYear = clamp(Number(fromArg), minYear, maxYear);
+      }
+      if (toArg != null && Number.isFinite(Number(toArg))) {
+        toYear = clamp(Number(toArg), minYear, maxYear);
+      }
+      if (fromYear > toYear) [fromYear, toYear] = [toYear, fromYear];
+      updateSliderUi();
+      renderStats();
+      if (overlay) overlay.setProps({ layers: buildLayers() });
+    },
+    setHighlight({ flight = null, trip = null } = {}) {
+      highlightFlight = flight || null;
+      highlightTrip = trip || null;
+      if (overlay) overlay.setProps({ layers: buildLayers() });
+    },
+    animateYears,
+    stopAnimation,
+    reset() {
+      stopAnimation();
+      Object.keys(visibility).forEach(k => { visibility[k] = true; });
+      legend.querySelectorAll('label[data-layer]').forEach(label => {
+        label.classList.remove('off');
+      });
+      fromYear = minYear;
+      toYear = maxYear;
+      highlightFlight = null;
+      highlightTrip = null;
+      updateSliderUi();
+      renderStats();
+      if (overlay) overlay.setProps({ layers: buildLayers() });
+    },
+  };
+  window.addEventListener('message', (e) => {
+    // Reject anything not from an explicitly allowed origin.
+    if (parentOrigins.size && !parentOrigins.has(e.origin)) return;
+    const d = e.data;
+    if (!d || typeof d !== 'object' || typeof d.type !== 'string') return;
+    if (!d.type.startsWith('bigfoot:')) return;
+    switch (d.type.slice(8)) {
+      case 'setLayers': api.setLayers(d.layers); break;
+      case 'setView': api.setView(d); break;
+      case 'setYearRange': api.setYearRange(d.from, d.to); break;
+      case 'setHighlight': api.setHighlight(d); break;
+      case 'animateYears': api.animateYears(d); break;
+      case 'stopAnimation': api.stopAnimation(); break;
+      case 'reset': api.reset(); break;
+    }
+  });
+  // Let the parent know we're ready to receive messages.
+  map.on('load', () => postToParent({ type: 'bigfoot:ready' }));
 }).catch(err => console.error(err));

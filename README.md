@@ -93,6 +93,7 @@ The viz reads three query params so you can deep-link, embed, or share focused v
 - `?layers=places,flights,road-trips,states` — only the named layers are visible on load. Any omitted layer's legend row shows as off. Example: `?layers=flights,states` hides places and road trips.
 - `?view=LAT,LNG,ZOOM` — overrides `config.json`'s center/zoom (and the intro flyTo target). Example: `?view=38.9,-77.0,7` frames DC at zoom 7.
 - `?animate=1` — on load, auto-plays the year slider from the earliest year to the latest, pauses, and loops. Clicking either slider thumb stops it. Pass a number to override ms-per-year (e.g. `?animate=800` for faster).
+- `?parent=https://blog.example.com` — allowlist for postMessage control (see Embedding section). Comma-separate for multiple origins.
 - `?flight=YYYY-MM-DD` or `?trip=YYYY-MM-DD` — highlights flights/road trips by date. Matches render bright white at 2.5× width; everything else dims to 15% alpha. The map auto-fits to the highlight (unless `?view=` overrides). Accepts:
   - Single day: `?flight=2023-08-14`
   - Month: `?flight=2023-08`
@@ -100,6 +101,67 @@ The viz reads three query params so you can deep-link, embed, or share focused v
   - Range: `?flight=2023-08..2023-10` (August through October 2023), `?trip=2019..2021` (three-year span)
 
 Combine freely: `?view=40.7,-74,5&layers=flights&animate=1500` frames NYC, shows only flights, and animates at 1.5 s/year.
+
+## Embedding / scrollytelling
+
+Bigfoot can be driven from a parent page (e.g. an iframe in a blog post) via `window.postMessage`. Unlike URL parameters, messages trigger smooth `flyTo` transitions instead of iframe reloads — ideal for scroll-driven storytelling.
+
+**Restricting which origins can drive the iframe** (recommended for production): add `?parent=https://your-blog.example.com` to the iframe `src`. The iframe will then only accept messages from that origin, and will target its `ready` signal specifically at that origin. Comma-separate to allow multiple: `?parent=https://prod.example.com,https://staging.example.com`. If the param is absent, any origin is accepted — convenient for local testing, but lax for production.
+
+On map load the iframe posts `{type: 'bigfoot:ready'}` to the parent. After that, send any of these:
+
+```js
+const bf = document.querySelector('iframe').contentWindow;
+
+// Show only certain layers (missing keys stay unchanged)
+bf.postMessage({
+  type: 'bigfoot:setLayers',
+  layers: { flights: true, 'road-trips': false, places: false, states: true }
+}, '*');
+
+// Smooth flyTo (center is [lng, lat])
+bf.postMessage({
+  type: 'bigfoot:setView',
+  center: [85.3, 27.7], zoom: 10, duration: 2000
+}, '*');
+
+// Year filter
+bf.postMessage({ type: 'bigfoot:setYearRange', from: 2019, to: 2020 }, '*');
+
+// Highlight a trip/flight (same syntax as ?flight= / ?trip= — date prefix
+// or `a..b` range; pass null to clear)
+bf.postMessage({ type: 'bigfoot:setHighlight', flight: '2023-08', trip: null }, '*');
+
+// Animate the year slider. All options are optional:
+//   tickMs  — ms per year (default 1200)
+//   from/to — restrict the sweep to a sub-range (defaults to the full range)
+//   loop    — keep cycling (default true). Set false for a single pass.
+bf.postMessage({
+  type: 'bigfoot:animateYears',
+  tickMs: 800,
+  from: 2018,
+  to: 2024,
+  loop: false,
+}, '*');
+
+// Stop an in-flight animation (user interaction with the slider also stops it)
+bf.postMessage({ type: 'bigfoot:stopAnimation' }, '*');
+
+// Return everything to defaults
+bf.postMessage({ type: 'bigfoot:reset' }, '*');
+```
+
+When `loop: false` completes, the iframe posts `{type: 'bigfoot:animationEnd'}` back so the parent can advance to the next scroll step.
+
+Listener pattern for the parent:
+
+```js
+window.addEventListener('message', (e) => {
+  if (e.data?.type === 'bigfoot:ready') {
+    // safe to start driving the iframe
+  }
+});
+```
 
 ## Deploying to GitHub Pages
 
