@@ -153,11 +153,9 @@ Promise.all([
   const isHlTrip = (t) => dateMatches(t.startTime, highlightTrip);
   // Fn so updates to highlightFlight/highlightTrip are picked up live.
   const anyHighlight = () => Boolean(highlightFlight || highlightTrip);
-  // Warm gold glow — two halo colors layered around a hot white core.
-  const GLOW_OUTER = [255, 210, 90, 45];
-  const GLOW_INNER = [255, 230, 150, 110];
-  const HIGHLIGHT_RGB = [255, 250, 220];
-  const DIM_ALPHA = 40;
+  // Highlight = thicker line; non-highlighted = same color, much lower alpha.
+  const HIGHLIGHT_WIDTH_MULT = 3;
+  const DIM_ALPHA = 25;
   const dim = (rgbaOrRgb) => [rgbaOrRgb[0], rgbaOrRgb[1], rgbaOrRgb[2], DIM_ALPHA];
 
   // Year filter — two-thumb range. Trips/flights with startTime outside the
@@ -208,91 +206,25 @@ Promise.all([
       visible: visibility['states'],
       beforeId: firstSymbolId,
     }),
-    // Glow halos behind road trips (wide translucent → narrower semi).
-    ...(hlTrips.length && visibility['road-trips'] ? [
-      new deck.PathLayer({
-        id: 'road-trips-glow-outer',
-        data: hlTrips,
-        getPath: tripPath,
-        getColor: GLOW_OUTER,
-        getWidth: tripWeight * 9,
-        widthUnits: 'pixels',
-        pickable: false,
-        beforeId: firstSymbolId,
-      }),
-      new deck.PathLayer({
-        id: 'road-trips-glow-inner',
-        data: hlTrips,
-        getPath: tripPath,
-        getColor: GLOW_INNER,
-        getWidth: tripWeight * 4.5,
-        widthUnits: 'pixels',
-        pickable: false,
-        beforeId: firstSymbolId,
-      }),
-    ] : []),
     new deck.PathLayer({
       id: 'road-trips',
       data: roadTrips.filter(withinYear),
       getPath: tripPath,
-      getColor: t => {
-        if (!hl) return routesColor;
-        if (isHlTrip(t)) return [...HIGHLIGHT_RGB, 255];
-        return dim(routesColor);
-      },
-      getWidth: t => isHlTrip(t) ? tripWeight * 2 : tripWeight,
+      getColor: t => (hl && !isHlTrip(t)) ? dim(routesColor) : routesColor,
+      getWidth: t => isHlTrip(t) ? tripWeight * HIGHLIGHT_WIDTH_MULT : tripWeight,
       widthUnits: 'pixels',
       pickable: true,
       visible: visibility['road-trips'],
       beforeId: firstSymbolId,
     }),
-    // Glow halos behind flights.
-    ...(hlFlights.length && visibility['flights'] ? [
-      new deck.ArcLayer({
-        id: 'flights-glow-outer',
-        data: hlFlights,
-        getSourcePosition: flightSrc,
-        getTargetPosition: flightTgt,
-        getSourceColor: GLOW_OUTER,
-        getTargetColor: GLOW_OUTER,
-        getWidth: flightWeight * 9,
-        widthUnits: 'pixels',
-        getHeight: 0.3,
-        greatCircle: true,
-        pickable: false,
-        beforeId: firstSymbolId,
-      }),
-      new deck.ArcLayer({
-        id: 'flights-glow-inner',
-        data: hlFlights,
-        getSourcePosition: flightSrc,
-        getTargetPosition: flightTgt,
-        getSourceColor: GLOW_INNER,
-        getTargetColor: GLOW_INNER,
-        getWidth: flightWeight * 4.5,
-        widthUnits: 'pixels',
-        getHeight: 0.3,
-        greatCircle: true,
-        pickable: false,
-        beforeId: firstSymbolId,
-      }),
-    ] : []),
     new deck.ArcLayer({
       id: 'flights',
       data: flights.filter(withinYear),
       getSourcePosition: flightSrc,
       getTargetPosition: flightTgt,
-      getSourceColor: f => {
-        if (!hl) return flightColorFor(f);
-        if (isHlFlight(f)) return [...HIGHLIGHT_RGB, 255];
-        return dim(flightColorFor(f));
-      },
-      getTargetColor: f => {
-        if (!hl) return flightColorFor(f);
-        if (isHlFlight(f)) return [...HIGHLIGHT_RGB, 255];
-        return dim(flightColorFor(f));
-      },
-      getWidth: f => isHlFlight(f) ? flightWeight * 2 : flightWeight,
+      getSourceColor: f => (hl && !isHlFlight(f)) ? dim(flightColorFor(f)) : flightColorFor(f),
+      getTargetColor: f => (hl && !isHlFlight(f)) ? dim(flightColorFor(f)) : flightColorFor(f),
+      getWidth: f => isHlFlight(f) ? flightWeight * HIGHLIGHT_WIDTH_MULT : flightWeight,
       widthUnits: 'pixels',
       getHeight: 0.3,
       greatCircle: true,
