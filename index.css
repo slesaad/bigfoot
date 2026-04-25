@@ -131,7 +131,7 @@ body {
     letter-spacing: 0.14em;
     opacity: 1;
     padding-right: 4px;
-    color: #f1c40f;
+    color: #f1ad0f;
 }
 
 .stats .since + span::before {
@@ -175,7 +175,7 @@ body {
     font-weight: 700;
     font-style: italic;
     letter-spacing: 0.14em;
-    color: #f1c40f;
+    color: #f1ad0f;
     min-width: 3ch;
     text-align: center;
 }
