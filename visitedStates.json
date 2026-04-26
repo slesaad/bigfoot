@@ -1,23 +1,190 @@
 [
-    "Alabama",
-    "Arizona",
-    "California",
-    "Colorado",
-    "District of Columbia",
-    "Florida",
-    "Georgia",
-    "Hawaii",
-    "Illinois",
-    "Iowa",
-    "Kentucky",
-    "Louisiana",
-    "Maryland",
-    "Nevada",
-    "New Mexico",
-    "New York",
-    "North Carolina",
-    "Tennessee",
-    "Texas",
-    "Utah",
-    "Virginia"
+    {
+        "name": "Alabama",
+        "years": [
+            2018,
+            2019,
+            2020,
+            2021,
+            2022,
+            2023,
+            2024,
+            2025,
+            2026
+        ]
+    },
+    {
+        "name": "Arizona",
+        "years": [
+            2021,
+            2025
+        ]
+    },
+    {
+        "name": "California",
+        "years": [
+            2019,
+            2022,
+            2023,
+            2026
+        ]
+    },
+    {
+        "name": "Colorado",
+        "years": [
+            2019,
+            2021
+        ]
+    },
+    {
+        "name": "District of Columbia",
+        "years": [
+            2019,
+            2021,
+            2022,
+            2024,
+            2026
+        ]
+    },
+    {
+        "name": "Florida",
+        "years": [
+            2019,
+            2023
+        ]
+    },
+    {
+        "name": "Georgia",
+        "years": [
+            2019,
+            2020,
+            2021,
+            2022,
+            2023,
+            2024,
+            2025,
+            2026
+        ]
+    },
+    {
+        "name": "Hawaii",
+        "years": [
+            2026
+        ]
+    },
+    {
+        "name": "Illinois",
+        "years": [
+            2019,
+            2020,
+            2021,
+            2022,
+            2023,
+            2024
+        ]
+    },
+    {
+        "name": "Iowa",
+        "years": [
+            2019,
+            2020,
+            2021,
+            2022
+        ]
+    },
+    {
+        "name": "Kentucky",
+        "years": [
+            2020,
+            2021,
+            2024
+        ]
+    },
+    {
+        "name": "Louisiana",
+        "years": [
+            2021
+        ]
+    },
+    {
+        "name": "Maryland",
+        "years": [
+            2022,
+            2024
+        ]
+    },
+    {
+        "name": "Nevada",
+        "years": [
+            2021,
+            2022,
+            2025
+        ]
+    },
+    {
+        "name": "New Mexico",
+        "years": [
+            2019
+        ]
+    },
+    {
+        "name": "New York",
+        "years": [
+            2018,
+            2019,
+            2021,
+            2024
+        ]
+    },
+    {
+        "name": "North Carolina",
+        "years": [
+            2018,
+            2022,
+            2023,
+            2024,
+            2025
+        ]
+    },
+    {
+        "name": "Tennessee",
+        "years": [
+            2018,
+            2019,
+            2020,
+            2021,
+            2022,
+            2023,
+            2025,
+            2026
+        ]
+    },
+    {
+        "name": "Texas",
+        "years": [
+            2019,
+            2020,
+            2023,
+            2024
+        ]
+    },
+    {
+        "name": "Utah",
+        "years": [
+            2021,
+            2025
+        ]
+    },
+    {
+        "name": "Virginia",
+        "years": [
+            2019,
+            2020,
+            2021,
+            2022,
+            2023,
+            2024,
+            2026
+        ]
+    }
 ]
