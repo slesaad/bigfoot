@@ -75,10 +75,24 @@ Promise.all([
     minZoom: mapConfig.minZoom,
   });
 
-  const visitedSet = new Set(visited.map(s => s.toLowerCase()));
-  const visitedFeatures = allStates.filter(f =>
-    visitedSet.has(f.properties.NAME.toLowerCase()),
+  // visitedStates.json: new format = [{name, years}, ...]; old = [name, ...].
+  const visitedEntries = visited.map(v =>
+    typeof v === 'string' ? { name: v, years: null } : v,
   );
+  const visitedYearsByName = new Map(
+    visitedEntries.map(v => [v.name.toLowerCase(), v.years]),
+  );
+  const allStateNamesLower = new Set(visitedEntries.map(v => v.name.toLowerCase()));
+  const visitedFeaturesAll = allStates.filter(f =>
+    allStateNamesLower.has(f.properties.NAME.toLowerCase()),
+  );
+  // Subset to the current year range (or all if a state has no year info).
+  const filteredVisitedFeatures = () =>
+    visitedFeaturesAll.filter(f => {
+      const ys = visitedYearsByName.get(f.properties.NAME.toLowerCase());
+      if (!ys || !ys.length) return true;
+      return ys.some(y => y >= fromYear && y <= toYear);
+    });
 
   const placesColor = hexToRgba(
     vizConfig.points.fillColor,
@@ -193,7 +207,7 @@ Promise.all([
     return [
     new deck.GeoJsonLayer({
       id: 'states',
-      data: { type: 'FeatureCollection', features: visitedFeatures },
+      data: { type: 'FeatureCollection', features: filteredVisitedFeatures() },
       stroked: false,
       filled: true,
       getFillColor: statesColor,
@@ -390,7 +404,7 @@ Promise.all([
     const trips = roadTrips.filter(withinYear);
     const flts = flights.filter(withinYear);
     const items = [
-      { text: `${visited.length} states` },
+      { text: `${filteredVisitedFeatures().length} states` },
       { text: `${trips.length} road trips` },
       { text: `${flts.length} flights` },
     ];
