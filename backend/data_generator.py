@@ -152,10 +152,15 @@ def generate_new_format(data):
             if ll:
                 lat, lng = ll
                 key = top.get('placeId') or (round(lat, 4), round(lng, 4))
-                if key in places_by_key:
-                    places_by_key[key]['count'] += 1
-                else:
-                    places_by_key[key] = {'lat': lat, 'lng': lng, 'count': 1}
+                start = seg.get('startTime') or ''
+                year = int(start[:4]) if start[:4].isdigit() else None
+                entry = places_by_key.get(key)
+                if entry is None:
+                    entry = {'lat': lat, 'lng': lng, 'count': 0, 'years': set()}
+                    places_by_key[key] = entry
+                entry['count'] += 1
+                if year is not None:
+                    entry['years'].add(year)
             continue
 
         if activity := seg.get('activity'):
@@ -210,7 +215,10 @@ def generate_new_format(data):
         {
             "type": "Feature",
             "geometry": {"type": "Point", "coordinates": [p['lng'], p['lat']]},
-            "properties": {"count": p['count']},
+            "properties": {
+                "count": p['count'],
+                "years": sorted(p['years']),
+            },
         }
         for p in places_by_key.values()
     ]
@@ -468,7 +476,11 @@ def _point_in_polygon(x, y, polygon):
 
 
 def derive_visited_states(places, us_states_path, min_places=1):
-    """Return sorted list of state NAMEs containing at least min_places places."""
+    """Return [{name, years}, ...] for states with at least min_places places.
+
+    `years` is the sorted union of every contained place's year set, so the
+    frontend can filter the states overlay by year range.
+    """
     if not os.path.isfile(us_states_path):
         return []
     states = json.load(open(us_states_path))
@@ -483,7 +495,7 @@ def derive_visited_states(places, us_states_path, min_places=1):
         state_info.append((name, (min(lngs), min(lats), max(lngs), max(lats)), polys))
 
     counts = {}
-    # Dedupe places by ~110m bin so a single location isn't counted thousands of times.
+    years_per_state = {}
     seen = set()
     for p in places:
         lng, lat = p['geometry']['coordinates']
@@ -491,13 +503,19 @@ def derive_visited_states(places, us_states_path, min_places=1):
         if key in seen:
             continue
         seen.add(key)
+        place_years = p.get('properties', {}).get('years') or []
         for name, (minx, miny, maxx, maxy), polys in state_info:
             if not (minx <= lng <= maxx and miny <= lat <= maxy):
                 continue
             if any(_point_in_polygon(lng, lat, poly) for poly in polys):
                 counts[name] = counts.get(name, 0) + 1
+                years_per_state.setdefault(name, set()).update(place_years)
                 break
-    return sorted(n for n, c in counts.items() if c >= min_places)
+    return [
+        {"name": name, "years": sorted(years_per_state.get(name, set()))}
+        for name, c in sorted(counts.items())
+        if c >= min_places
+    ]
 
 
 def save(filepath, places, flights, road_trips):

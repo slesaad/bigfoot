@@ -228,7 +228,11 @@ Promise.all([
     }),
     new deck.ScatterplotLayer({
       id: 'places',
-      data: places,
+      data: places.filter(p => {
+        const ys = p.properties?.years;
+        if (!ys || !ys.length) return true; // legacy data with no year info
+        return ys.some(y => y >= fromYear && y <= toYear);
+      }),
       getPosition: f => f.geometry.coordinates,
       // Radius scales with visit count (sqrt = area linear in count), capped
       // so a 1000-visit home doesn't swallow the map.
