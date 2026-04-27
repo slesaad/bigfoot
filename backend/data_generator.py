@@ -33,7 +33,6 @@ GEOCODE_PRECISION = 3
 # flipping this value invalidates stale entries automatically.
 MAPBOX_OVERVIEW = "simplified"
 
-
 def _load_json_tolerant(path):
     """Load JSON, tolerating latin-1 degree symbols and truncation.
 
@@ -148,7 +147,10 @@ def generate_new_format(data):
         if visit := seg.get('visit'):
             top = visit.get('topCandidate', {})
             loc = top.get('placeLocation', {})
-            ll = _parse_latlng(loc.get('latLng'))
+            if isinstance(loc, dict):
+                ll = _parse_latlng(loc.get('latLng'))
+            else:
+                ll = _parse_latlng(loc)
             if ll:
                 lat, lng = ll
                 key = top.get('placeId') or (round(lat, 4), round(lng, 4))
@@ -165,9 +167,19 @@ def generate_new_format(data):
 
         if activity := seg.get('activity'):
             atype = activity.get('topCandidate', {}).get('type')
-            start_ll = _parse_latlng(activity.get('start', {}).get('latLng'))
-            end_ll = _parse_latlng(activity.get('end', {}).get('latLng'))
-            distance = activity.get('distanceMeters') or 0
+            if atype:
+                atype = atype.upper().replace(" ", "_")
+            start = activity.get('start')
+            end = activity.get('end')
+            if isinstance(start, dict):
+                start_ll = _parse_latlng(activity.get('start', {}))
+            else:
+                start_ll = _parse_latlng(start)
+            if isinstance(end, dict):
+                end_ll = _parse_latlng(activity.get('end', {}))
+            else:
+                end_ll = _parse_latlng(end)
+            distance = float(activity.get('distanceMeters') or 0)
             if not (start_ll and end_ll):
                 continue
 
