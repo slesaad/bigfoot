@@ -35,6 +35,16 @@ data/
 
 The pipeline also supports the **legacy** Google Takeout `Semantic Location History/` format — if you still have one of those folders, place it at `data/location_history/` and the script will use it.
 
+**Note for some iPhone exports:** Certain iPhone Timeline exports may come as a raw JSON array instead of the expected object containing `semanticSegments`. If your `Timeline.json` starts with `[` rather than `{`, wrap the file like this before running the pipeline:
+>```json
+> {
+>   "semanticSegments": [
+>     ...existing entries...
+>   ]
+> }
+> ```
+In short: add `{ "semanticSegments": ` before the opening `[` and add `}` after the closing `]`.
+
 ### Step II: Get a Mapbox token
 
 You need a Mapbox token with Directions + Geocoding scopes for the data pipeline (one-time, used only while generating data). Create one at [Mapbox → access tokens](https://account.mapbox.com/access-tokens/) with the default public scopes and **no URL restrictions** (so server-side calls from your laptop aren't blocked).
